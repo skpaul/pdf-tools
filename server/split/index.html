@@ -7,6 +7,18 @@
     <link rel="stylesheet" href="../../shared/css/common.css">
 </head>
 <body>
+    <div class="breadcrumb">
+        <div class="container">
+            <div class="breadcrumb-nav">
+                <a href="../../index.html">🏠 Home</a>
+                <span class="breadcrumb-separator">›</span>
+                <a href="../index.html">Server Tools</a>
+                <span class="breadcrumb-separator">›</span>
+                <span>PDF Splitter</span>
+            </div>
+        </div>
+    </div>
+
     <div class="tool-header">
         <div class="container">
             <h1>✂️ PDF Splitter</h1>
@@ -90,7 +102,7 @@
 
         <div style="text-align: center; margin-top: 30px;">
             <a href="../../index.html" class="btn btn-secondary">← Back to Main</a>
-            <a href="../index.php" class="btn btn-secondary">Server Tools Home</a>
+            <a href="../index.html" class="btn btn-secondary">Server Tools Home</a>
             <a href="../../client/index.html" class="btn btn-success">Try Client-Side Version</a>
         </div>
     </div>
@@ -191,7 +203,30 @@
                 method: 'POST',
                 body: formData
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.text();
+            })
+            .then(text => {
+                console.log('Raw response:', text); // Debug log
+                console.log('Response length:', text.length);
+                console.log('Response type:', typeof text);
+                
+                if (!text || text.trim() === '') {
+                    throw new Error('Empty response from server');
+                }
+                
+                try {
+                    const data = JSON.parse(text);
+                    return data;
+                } catch (e) {
+                    console.error('JSON Parse Error:', e);
+                    console.error('Raw text:', text);
+                    throw new Error('Invalid JSON response: ' + text.substring(0, 200) + '...');
+                }
+            })
             .then(data => {
                 PDFToolsUtils.hideProgress(progressEl);
                 

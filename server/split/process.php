@@ -1,5 +1,9 @@
 <?php
 // Professional PDF Splitter using FPDI library
+error_reporting(E_ALL);
+ini_set('display_errors', 0); // Don't display errors to browser (we want JSON)
+ini_set('log_errors', 1);
+
 require_once '../../vendor/autoload.php';
 
 // Set PHP configuration for large file uploads
@@ -12,35 +16,46 @@ ini_set('memory_limit', '256M');
 use setasign\Fpdi\Fpdi;
 
 // Create necessary directories
-if (!file_exists('uploads')) {
-    mkdir('uploads', 0777, true);
+if (!file_exists('../../uploads')) {
+    mkdir('../../uploads', 0777, true);
 }
-if (!file_exists('split')) {
-    mkdir('split', 0777, true);
+if (!file_exists('../../outputs/split')) {
+    mkdir('../../outputs/split', 0777, true);
 }
 
 function showError($message) {
-    echo "<!DOCTYPE html>
-    <html lang='en'>
-    <head>
-        <meta charset='UTF-8'>
-        <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-        <title>Error - PDF Splitter</title>
-        <style>
-            body { font-family: Arial, sans-serif; background: #f4f4f4; padding: 20px; }
-            .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-            .error { color: #e74c3c; background: #fdf2f2; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
-            .btn { display: inline-block; padding: 10px 20px; background: #3498db; color: white; text-decoration: none; border-radius: 5px; }
-        </style>
-    </head>
-    <body>
-        <div class='container'>
-            <h1>PDF Splitter - Error</h1>
-            <div class='error'>$message</div>
-            <a href='split.html' class='btn'>← Go Back</a>
-        </div>
-    </body>
-    </html>";
+    header('Content-Type: application/json');
+    echo json_encode([
+        'success' => false,
+        'error' => $message
+    ]);
+    exit;
+}
+
+// Global error handler
+set_error_handler(function($severity, $message, $file, $line) {
+    if (error_reporting() & $severity) {
+        showError("PHP Error: $message in $file on line $line");
+    }
+});
+
+// Global exception handler
+set_exception_handler(function($exception) {
+    showError("PHP Exception: " . $exception->getMessage());
+});
+
+function formatFileSize($bytes) {
+    if ($bytes === 0) return '0 Bytes';
+    $k = 1024;
+    $sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    $i = floor(log($bytes) / log($k));
+    return round($bytes / pow($k, $i), 2) . ' ' . $sizes[$i];
+}
+
+// Basic connectivity test
+if (isset($_GET['test'])) {
+    header('Content-Type: application/json');
+    echo json_encode(['status' => 'ok', 'message' => 'Split processor is working']);
     exit;
 }
 
@@ -53,8 +68,6 @@ if (!isset($_FILES['pdf_file'])) {
 }
 
 $pdfFile = $_FILES['pdf_file'];
-$splitMode = $_POST['split_mode'] ?? 'pages';
-$splitValue = $_POST['split_value'] ?? '';
 
 // Validate file upload
 if ($pdfFile['error'] !== UPLOAD_ERR_OK) {
@@ -75,23 +88,44 @@ if ($pdfFile['size'] > $maxFileSize) {
 
 // Validate file type
 $allowedTypes = ['application/pdf'];
-$pdfType = mime_content_type($pdfFile['tmp_name']);
+$fileType = mime_content_type($pdfFile['tmp_name']);
 
-if (!in_array($pdfType, $allowedTypes)) {
+if (!in_array($fileType, $allowedTypes)) {
     showError('Invalid file type. Please upload only PDF files.');
 }
 
 // Validate file extension
-$pdfExt = strtolower(pathinfo($pdfFile['name'], PATHINFO_EXTENSION));
-if ($pdfExt !== 'pdf') {
+$fileExt = strtolower(pathinfo($pdfFile['name'], PATHINFO_EXTENSION));
+if ($fileExt !== 'pdf') {
     showError('Invalid file extension. Please upload only .pdf files.');
 }
 
-// Generate unique filename
+// Get split parameters
+$splitMode = $_POST['split_mode'] ?? 'all';
+$splitValue = '';
+
+switch ($splitMode) {
+    case 'pages':
+        $splitValue = $_POST['pages'] ?? '';
+        break;
+    case 'range':
+        $startPage = $_POST['start_page'] ?? 1;
+        $endPage = $_POST['end_page'] ?? 1;
+        $splitValue = $startPage . '-' . $endPage;
+        break;
+    case 'chunks':
+        $splitValue = $_POST['pages_per_chunk'] ?? 1;
+        break;
+    case 'all':
+        $splitValue = '1';
+        break;
+}
+
+// Generate unique filenames
 $timestamp = time();
 $originalName = pathinfo($pdfFile['name'], PATHINFO_FILENAME);
 $uploadedName = 'uploaded_' . $timestamp . '.pdf';
-$uploadedPath = 'uploads/' . $uploadedName;
+$uploadedPath = '../../uploads/' . $uploadedName;
 
 // Move uploaded file
 if (!move_uploaded_file($pdfFile['tmp_name'], $uploadedPath)) {
@@ -99,32 +133,89 @@ if (!move_uploaded_file($pdfFile['tmp_name'], $uploadedPath)) {
 }
 
 // Professional PDF splitter using FPDI
-function splitPDF($inputPath, $splitMode, $splitValue, $originalName, $timestamp) {
+function splitPDF($inputPath, $mode, $value, $originalName, $timestamp) {
     try {
         $results = [];
         
-        // First, get total page count
+        // Get total page count
         $pdf = new Fpdi();
         $totalPages = $pdf->setSourceFile($inputPath);
         
-        if ($splitMode === 'pages') {
-            // Split by page ranges (e.g., "1-3,5,7-9")
-            $ranges = explode(',', $splitValue);
-            $fileIndex = 1;
-            
-            foreach ($ranges as $range) {
-                $range = trim($range);
-                if (empty($range)) continue;
-                
-                $pdf = new Fpdi();
-                
-                if (strpos($range, '-') !== false) {
-                    // Range like "1-3"
-                    list($start, $end) = explode('-', $range);
-                    $start = max(1, intval(trim($start)));
-                    $end = min($totalPages, intval(trim($end)));
-                    
+        switch ($mode) {
+            case 'all':
+                // Split each page into separate file
+                for ($i = 1; $i <= $totalPages; $i++) {
+                    $pdf = new Fpdi();
                     $pdf->setSourceFile($inputPath);
+                    $pdf->AddPage();
+                    $templateId = $pdf->importPage($i);
+                    $pdf->useTemplate($templateId);
+                    
+                    $outputName = $originalName . "_page_{$i}_{$timestamp}.pdf";
+                    $outputPath = "../../outputs/split/" . $outputName;
+                    $pdf->Output($outputPath, 'F');
+                    
+                    $results[] = [
+                        'name' => $outputName,
+                        'path' => $outputPath,
+                        'pages' => 1,
+                        'size' => filesize($outputPath)
+                    ];
+                }
+                break;
+                
+            case 'pages':
+                // Split specific pages/ranges
+                $pageRanges = explode(',', $value);
+                $fileIndex = 1;
+                
+                foreach ($pageRanges as $range) {
+                    $range = trim($range);
+                    if (strpos($range, '-') !== false) {
+                        // Range like "1-5"
+                        list($start, $end) = explode('-', $range);
+                        $start = max(1, intval($start));
+                        $end = min($totalPages, intval($end));
+                    } else {
+                        // Single page
+                        $start = $end = max(1, min($totalPages, intval($range)));
+                    }
+                    
+                    if ($start <= $end && $start <= $totalPages) {
+                        $pdf = new Fpdi();
+                        $pdf->setSourceFile($inputPath);
+                        
+                        for ($i = $start; $i <= $end; $i++) {
+                            $pdf->AddPage();
+                            $templateId = $pdf->importPage($i);
+                            $pdf->useTemplate($templateId);
+                        }
+                        
+                        $outputName = $originalName . "_pages_{$start}-{$end}_{$timestamp}.pdf";
+                        $outputPath = "../../outputs/split/" . $outputName;
+                        $pdf->Output($outputPath, 'F');
+                        
+                        $results[] = [
+                            'name' => $outputName,
+                            'path' => $outputPath,
+                            'pages' => $end - $start + 1,
+                            'size' => filesize($outputPath)
+                        ];
+                    }
+                    $fileIndex++;
+                }
+                break;
+                
+            case 'range':
+                // Single range
+                list($start, $end) = explode('-', $value);
+                $start = max(1, intval($start));
+                $end = min($totalPages, intval($end));
+                
+                if ($start <= $end) {
+                    $pdf = new Fpdi();
+                    $pdf->setSourceFile($inputPath);
+                    
                     for ($i = $start; $i <= $end; $i++) {
                         $pdf->AddPage();
                         $templateId = $pdf->importPage($i);
@@ -132,80 +223,48 @@ function splitPDF($inputPath, $splitMode, $splitValue, $originalName, $timestamp
                     }
                     
                     $outputName = $originalName . "_pages_{$start}-{$end}_{$timestamp}.pdf";
-                    $pageCount = $end - $start + 1;
-                } else {
-                    // Single page
-                    $pageNum = max(1, min($totalPages, intval($range)));
-                    $pdf->setSourceFile($inputPath);
-                    $pdf->AddPage();
-                    $templateId = $pdf->importPage($pageNum);
-                    $pdf->useTemplate($templateId);
+                    $outputPath = "../../outputs/split/" . $outputName;
+                    $pdf->Output($outputPath, 'F');
                     
-                    $outputName = $originalName . "_page_{$pageNum}_{$timestamp}.pdf";
-                    $pageCount = 1;
+                    $results[] = [
+                        'name' => $outputName,
+                        'path' => $outputPath,
+                        'pages' => $end - $start + 1,
+                        'size' => filesize($outputPath)
+                    ];
                 }
+                break;
                 
-                $outputPath = 'split/' . $outputName;
-                $pdf->Output($outputPath, 'F');
+            case 'chunks':
+                // Split into chunks
+                $chunkSize = max(1, intval($value));
+                $chunkIndex = 1;
                 
-                $results[] = [
-                    'filename' => $outputName,
-                    'path' => $outputPath,
-                    'pages' => $pageCount,
-                    'size' => filesize($outputPath)
-                ];
-                
-                $fileIndex++;
-            }
-        } elseif ($splitMode === 'individual') {
-            // Split into individual pages
-            for ($i = 1; $i <= $totalPages; $i++) {
-                $pdf = new Fpdi();
-                $pdf->setSourceFile($inputPath);
-                $pdf->AddPage();
-                $templateId = $pdf->importPage($i);
-                $pdf->useTemplate($templateId);
-                
-                $outputName = $originalName . "_page_{$i}_{$timestamp}.pdf";
-                $outputPath = 'split/' . $outputName;
-                $pdf->Output($outputPath, 'F');
-                
-                $results[] = [
-                    'filename' => $outputName,
-                    'path' => $outputPath,
-                    'pages' => 1,
-                    'size' => filesize($outputPath)
-                ];
-            }
-        } elseif ($splitMode === 'chunks') {
-            // Split into chunks of N pages
-            $chunkSize = max(1, intval($splitValue));
-            $chunkIndex = 1;
-            
-            for ($startPage = 1; $startPage <= $totalPages; $startPage += $chunkSize) {
-                $pdf = new Fpdi();
-                $pdf->setSourceFile($inputPath);
-                $endPage = min($startPage + $chunkSize - 1, $totalPages);
-                
-                for ($i = $startPage; $i <= $endPage; $i++) {
-                    $pdf->AddPage();
-                    $templateId = $pdf->importPage($i);
-                    $pdf->useTemplate($templateId);
+                for ($startPage = 1; $startPage <= $totalPages; $startPage += $chunkSize) {
+                    $pdf = new Fpdi();
+                    $pdf->setSourceFile($inputPath);
+                    $endPage = min($startPage + $chunkSize - 1, $totalPages);
+                    
+                    for ($i = $startPage; $i <= $endPage; $i++) {
+                        $pdf->AddPage();
+                        $templateId = $pdf->importPage($i);
+                        $pdf->useTemplate($templateId);
+                    }
+                    
+                    $outputName = $originalName . "_chunk_{$chunkIndex}_{$timestamp}.pdf";
+                    $outputPath = "../../outputs/split/" . $outputName;
+                    $pdf->Output($outputPath, 'F');
+                    
+                    $results[] = [
+                        'name' => $outputName,
+                        'path' => $outputPath,
+                        'pages' => $endPage - $startPage + 1,
+                        'size' => filesize($outputPath)
+                    ];
+                    
+                    $chunkIndex++;
                 }
-                
-                $outputName = $originalName . "_chunk_{$chunkIndex}_{$timestamp}.pdf";
-                $outputPath = 'split/' . $outputName;
-                $pdf->Output($outputPath, 'F');
-                
-                $results[] = [
-                    'filename' => $outputName,
-                    'path' => $outputPath,
-                    'pages' => $endPage - $startPage + 1,
-                    'size' => filesize($outputPath)
-                ];
-                
-                $chunkIndex++;
-            }
+                break;
         }
         
         return [
@@ -236,172 +295,47 @@ if ($splitMode === 'chunks' && (empty($splitValue) || intval($splitValue) < 1)) 
 $splitResult = splitPDF($uploadedPath, $splitMode, $splitValue, $originalName, $timestamp);
 
 if ($splitResult['success']) {
-    $totalSize = array_sum(array_column($splitResult['results'], 'size'));
-    $totalSizeMB = round($totalSize / (1024 * 1024), 2);
-    
-    // Success page
-    echo "<!DOCTYPE html>
-    <html lang='en'>
-    <head>
-        <meta charset='UTF-8'>
-        <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-        <title>Success - Professional PDF Splitter</title>
-        <style>
-            body { 
-                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-                background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
-                min-height: 100vh;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                padding: 20px;
-                margin: 0;
-            }
-            .container { 
-                max-width: 1000px; 
-                background: white; 
-                padding: 40px; 
-                border-radius: 15px; 
-                box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-                text-align: center;
-            }
-            .success { 
-                color: #27ae60; 
-                background: #f8fff8; 
-                padding: 20px; 
-                border-radius: 10px; 
-                margin-bottom: 30px;
-                border: 2px solid #27ae60;
-            }
-            .stats {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-                gap: 15px;
-                margin: 20px 0;
-            }
-            .stat-box {
-                background: #fdf2f2;
-                padding: 15px;
-                border-radius: 8px;
-                border: 1px solid #e74c3c;
-            }
-            .stat-number {
-                font-size: 2rem;
-                font-weight: bold;
-                color: #e74c3c;
-            }
-            .files-grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-                gap: 15px;
-                margin: 20px 0;
-            }
-            .file-card {
-                background: #f8f9fa;
-                padding: 15px;
-                border-radius: 8px;
-                border-left: 4px solid #e74c3c;
-                text-align: left;
-            }
-            .file-card h4 {
-                color: #333;
-                margin: 0 0 10px 0;
-                font-size: 0.9rem;
-                word-break: break-all;
-            }
-            .file-info {
-                font-size: 0.8rem;
-                color: #666;
-                margin: 5px 0;
-            }
-            .btn { 
-                display: inline-block; 
-                padding: 8px 15px; 
-                background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%); 
-                color: white; 
-                text-decoration: none; 
-                border-radius: 5px; 
-                margin: 5px;
-                font-size: 0.8rem;
-                font-weight: 500;
-            }
-            .btn:hover {
-                transform: translateY(-1px);
-                box-shadow: 0 5px 15px rgba(39, 174, 96, 0.3);
-            }
-            .btn-secondary { 
-                background: linear-gradient(135deg, #3498db 0%, #5dade2 100%); 
-            }
-            .btn-download-all {
-                background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
-                padding: 15px 30px;
-                font-size: 1rem;
-                margin: 20px 10px;
-            }
-            h1 { color: #333; margin-bottom: 20px; }
-        </style>
-    </head>
-    <body>
-        <div class='container'>
-            <h1>✂️ Professional PDF Splitter Success!</h1>
-            <div class='success'>
-                <h2>Your PDF has been successfully split!</h2>
-                <p>The original document has been divided into {$splitResult['total_files']} separate files.</p>
-            </div>
-            
-            <div class='stats'>
-                <div class='stat-box'>
-                    <div class='stat-number'>{$splitResult['total_pages']}</div>
-                    <div>Original<br>Pages</div>
-                </div>
-                <div class='stat-box'>
-                    <div class='stat-number'>{$splitResult['total_files']}</div>
-                    <div>Split<br>Files</div>
-                </div>
-                <div class='stat-box'>
-                    <div class='stat-number'>{$totalSizeMB}</div>
-                    <div>Total Size<br>(MB)</div>
-                </div>
-                <div class='stat-box'>
-                    <div class='stat-number'>" . ucfirst($splitMode) . "</div>
-                    <div>Split<br>Method</div>
-                </div>
-            </div>
-            
-            <div class='files-grid'>";
-    
-    foreach ($splitResult['results'] as $file) {
-        $fileSizeMB = round($file['size'] / (1024 * 1024), 2);
-        echo "<div class='file-card'>
-                <h4>{$file['filename']}</h4>
-                <div class='file-info'>Pages: {$file['pages']}</div>
-                <div class='file-info'>Size: {$fileSizeMB} MB</div>
-                <div style='margin-top: 10px;'>
-                    <a href='{$file['path']}' class='btn' download='{$file['filename']}'>📥 Download</a>
-                    <a href='view_pdf.php?file=" . urlencode(basename($file['path'])) . "&dir=split' class='btn btn-secondary' target='_blank'>👁️ View</a>
-                </div>
-            </div>";
-    }
-    
-    echo "    </div>
-            
-            <div style='margin-top: 30px;'>
-                <a href='download_all_split.php?timestamp={$timestamp}' class='btn btn-download-all'>
-                    📦 Download All Files (ZIP)
-                </a>
-                <a href='split.html' class='btn btn-secondary' style='padding: 15px 30px; font-size: 1rem;'>
-                    ✂️ Split Another PDF
-                </a>
-                <a href='index.html' class='btn btn-secondary' style='padding: 15px 30px; font-size: 1rem;'>
-                    🔄 Merge PDFs
-                </a>
-            </div>
-        </div>
-    </body>
-    </html>";
-    
     // Clean up uploaded file
     unlink($uploadedPath);
+    
+    // Prepare file data for JSON response
+    $files = [];
+    $zipUrl = null;
+    
+    if (count($splitResult['results']) > 1) {
+        // Create ZIP file for multiple files
+        $zipName = "split_files_{$timestamp}.zip";
+        $zipPath = "../../outputs/split/{$zipName}";
+        
+        $zip = new ZipArchive();
+        if ($zip->open($zipPath, ZipArchive::CREATE) === TRUE) {
+            foreach ($splitResult['results'] as $file) {
+                $zip->addFile($file['path'], $file['name']);
+            }
+            $zip->close();
+            $zipUrl = $zipPath;
+        }
+    }
+    
+    foreach ($splitResult['results'] as $file) {
+        $files[] = [
+            'name' => $file['name'],
+            'pages' => $file['pages'],
+            'size' => formatFileSize($file['size']),
+            'download_url' => $file['path'],
+            'view_url' => "../../shared/viewer/pdf-viewer.php?file=" . urlencode($file['name'])
+        ];
+    }
+    
+    // Return JSON response
+    header('Content-Type: application/json');
+    echo json_encode([
+        'success' => true,
+        'files_created' => count($splitResult['results']),
+        'total_files' => count($splitResult['results']),
+        'files' => $files,
+        'download_all_url' => $zipUrl
+    ]);
     
 } else {
     // Clean up uploaded file on error
