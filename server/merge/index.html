@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Merger - Server-Side Tool</title>
+    <link rel="stylesheet" href="../../shared/css/common.css">
+</head>
+<body>
+    <div class="tool-header">
+        <div class="container">
+            <h1>📄➕ PDF Merger</h1>
+            <p>Combine multiple PDF files into a single document using professional server-side processing</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <form action="process.php" method="post" enctype="multipart/form-data" id="mergeForm">
+            <div class="upload-area" onclick="document.getElementById('pdf1').click()">
+                <div class="upload-icon">📄</div>
+                <h3>First PDF File</h3>
+                <p>Click to select the first PDF file or drag & drop here</p>
+                <input type="file" id="pdf1" name="pdf1" class="file-input" accept=".pdf" required>
+            </div>
+            <div id="file1Info" class="file-list"></div>
+
+            <div class="upload-area" onclick="document.getElementById('pdf2').click()">
+                <div class="upload-icon">📄</div>
+                <h3>Second PDF File</h3>
+                <p>Click to select the second PDF file or drag & drop here</p>
+                <input type="file" id="pdf2" name="pdf2" class="file-input" accept=".pdf" required>
+            </div>
+            <div id="file2Info" class="file-list"></div>
+
+            <button type="submit" class="btn btn-primary" id="mergeBtn" disabled>
+                🔄 Merge PDFs
+            </button>
+
+            <div id="progress" class="progress">
+                <div class="progress-bar"></div>
+            </div>
+
+            <div id="status" class="status"></div>
+        </form>
+
+        <div class="control-panel">
+            <h3>ℹ️ Server-Side Processing Benefits</h3>
+            <ul style="margin-left: 20px; color: #666;">
+                <li>Handles complex PDF structures and embedded content</li>
+                <li>Professional FPDI library ensures high quality output</li>
+                <li>Supports large files up to 50MB</li>
+                <li>Preserves original PDF formatting and metadata</li>
+                <li>Automatic cleanup of temporary files</li>
+            </ul>
+        </div>
+
+        <div style="text-align: center; margin-top: 30px;">
+            <a href="../../index.html" class="btn btn-secondary">← Back to Main</a>
+            <a href="../index.php" class="btn btn-secondary">Server Tools Home</a>
+            <a href="../../client/index.html" class="btn btn-success">Try Client-Side Version</a>
+        </div>
+    </div>
+
+    <script src="../../shared/js/common.js"></script>
+    <script>
+        let file1Selected = false;
+        let file2Selected = false;
+
+        // Initialize drag and drop for both upload areas
+        new DragDropHandler(document.querySelector('#pdf1').parentElement, (file) => {
+            document.getElementById('pdf1').files = createFileList([file]);
+            handleFileSelection('pdf1', 'file1Info');
+        });
+
+        new DragDropHandler(document.querySelector('#pdf2').parentElement, (file) => {
+            document.getElementById('pdf2').files = createFileList([file]);
+            handleFileSelection('pdf2', 'file2Info');
+        });
+
+        // Handle file input changes
+        document.getElementById('pdf1').addEventListener('change', () => {
+            handleFileSelection('pdf1', 'file1Info');
+        });
+
+        document.getElementById('pdf2').addEventListener('change', () => {
+            handleFileSelection('pdf2', 'file2Info');
+        });
+
+        function createFileList(files) {
+            const dt = new DataTransfer();
+            files.forEach(file => dt.items.add(file));
+            return dt.files;
+        }
+
+        function handleFileSelection(inputId, infoId) {
+            const input = document.getElementById(inputId);
+            const infoDiv = document.getElementById(infoId);
+            
+            if (input.files.length > 0) {
+                const file = input.files[0];
+                const validation = PDFToolsUtils.validatePDFFile(file);
+                
+                if (validation.valid) {
+                    infoDiv.innerHTML = `
+                        <div class="file-item">
+                            <div class="file-info">
+                                <span class="file-name">📄 ${file.name}</span>
+                                <span class="file-size">(${PDFToolsUtils.formatFileSize(file.size)})</span>
+                            </div>
+                        </div>
+                    `;
+                    infoDiv.style.display = 'block';
+                    
+                    if (inputId === 'pdf1') file1Selected = true;
+                    if (inputId === 'pdf2') file2Selected = true;
+                } else {
+                    PDFToolsUtils.showStatus(document.getElementById('status'), validation.error, 'error');
+                    infoDiv.style.display = 'none';
+                    
+                    if (inputId === 'pdf1') file1Selected = false;
+                    if (inputId === 'pdf2') file2Selected = false;
+                }
+            } else {
+                infoDiv.style.display = 'none';
+                if (inputId === 'pdf1') file1Selected = false;
+                if (inputId === 'pdf2') file2Selected = false;
+            }
+            
+            updateMergeButton();
+        }
+
+        function updateMergeButton() {
+            const mergeBtn = document.getElementById('mergeBtn');
+            mergeBtn.disabled = !(file1Selected && file2Selected);
+        }
+
+        // Handle form submission
+        document.getElementById('mergeForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const progressEl = document.getElementById('progress');
+            const statusEl = document.getElementById('status');
+            const mergeBtn = document.getElementById('mergeBtn');
+            
+            mergeBtn.disabled = true;
+            mergeBtn.innerHTML = '<span class="loading"></span> Processing...';
+            PDFToolsUtils.showProgress(progressEl, 50);
+            
+            fetch('process.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                PDFToolsUtils.hideProgress(progressEl);
+                
+                if (data.success) {
+                    PDFToolsUtils.showStatus(statusEl, `
+                        <h4>✅ PDFs Merged Successfully!</h4>
+                        <p><strong>Output:</strong> ${data.filename}</p>
+                        <p><strong>Total Pages:</strong> ${data.total_pages}</p>
+                        <p><strong>File Size:</strong> ${data.file_size}</p>
+                        <div style="margin-top: 15px;">
+                            <a href="${data.download_url}" class="btn btn-success">📥 Download Merged PDF</a>
+                            <a href="${data.view_url}" class="btn btn-secondary" target="_blank">👁️ View PDF</a>
+                        </div>
+                    `, 'success');
+                } else {
+                    PDFToolsUtils.showStatus(statusEl, `❌ Error: ${data.error}`, 'error');
+                }
+            })
+            .catch(error => {
+                PDFToolsUtils.hideProgress(progressEl);
+                PDFToolsUtils.showStatus(statusEl, `❌ Error: ${error.message}`, 'error');
+            })
+            .finally(() => {
+                mergeBtn.disabled = false;
+                mergeBtn.innerHTML = '🔄 Merge PDFs';
+            });
+        });
+    </script>
+</body>
+</html>

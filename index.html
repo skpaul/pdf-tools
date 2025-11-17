@@ -3,325 +3,304 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF Merger Tool</title>
+    <title>Professional PDF Tools Suite</title>
+    <link rel="stylesheet" href="shared/css/common.css">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        .hero {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .container {
-            background: white;
-            padding: 40px;
-            border-radius: 15px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            max-width: 600px;
-            width: 100%;
-        }
-
-        h1 {
+            color: white;
+            padding: 60px 20px;
             text-align: center;
-            color: #333;
-            margin-bottom: 30px;
-            font-size: 2.5rem;
+            margin-bottom: 40px;
+        }
+
+        .hero h1 {
+            font-size: 3rem;
             font-weight: 300;
-        }
-
-        .upload-section {
-            margin-bottom: 30px;
-        }
-
-        .file-input-wrapper {
-            position: relative;
             margin-bottom: 20px;
         }
 
-        .file-input-wrapper label {
-            display: block;
-            margin-bottom: 8px;
-            color: #555;
-            font-weight: 500;
+        .hero p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto;
         }
 
-        .file-input {
-            width: 100%;
-            padding: 12px;
-            border: 2px dashed #ddd;
-            border-radius: 8px;
-            background: #f9f9f9;
-            cursor: pointer;
-            transition: all 0.3s ease;
+        .tool-selection {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .section-title {
             text-align: center;
+            font-size: 2rem;
+            color: #333;
+            margin-bottom: 40px;
         }
 
-        .file-input:hover {
+        .tool-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 60px;
+        }
+
+        .tool-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            text-align: center;
+            transition: all 0.3s ease;
+            border: 3px solid transparent;
+        }
+
+        .tool-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .tool-card.server {
             border-color: #667eea;
-            background: #f0f4ff;
         }
 
-        .file-input input[type="file"] {
-            width: 100%;
-            height: 100%;
-            opacity: 0;
-            position: absolute;
-            cursor: pointer;
+        .tool-card.client {
+            border-color: #2ecc71;
         }
 
-        .file-info {
-            margin-top: 10px;
-            font-size: 0.9rem;
+        .tool-icon {
+            font-size: 3rem;
+            margin-bottom: 20px;
+        }
+
+        .tool-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .tool-card p {
             color: #666;
+            margin-bottom: 25px;
+            line-height: 1.6;
         }
 
-        .submit-btn {
-            width: 100%;
-            padding: 15px;
+        .btn-primary {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
+            padding: 12px 30px;
             border: none;
             border-radius: 8px;
-            font-size: 1.1rem;
+            font-size: 1rem;
             font-weight: 500;
             cursor: pointer;
             transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
         }
 
-        .submit-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
-        }
-
-        .submit-btn:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-
-        .progress {
-            display: none;
-            margin-top: 20px;
-            text-align: center;
-        }
-
-        .progress-bar {
-            width: 100%;
-            height: 6px;
-            background: #f0f0f0;
-            border-radius: 3px;
-            overflow: hidden;
-            margin-bottom: 10px;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            width: 0%;
-            transition: width 0.3s ease;
-            animation: progress 2s infinite;
-        }
-
-        @keyframes progress {
-            0% { width: 0%; }
-            50% { width: 70%; }
-            100% { width: 100%; }
-        }
-
-        .error {
-            color: #e74c3c;
-            background: #fdf2f2;
-            padding: 15px;
+        .btn-success {
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+            color: white;
+            padding: 12px 30px;
+            border: none;
             border-radius: 8px;
-            margin-top: 20px;
-            display: none;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary:hover, .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .comparison-table {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            margin-bottom: 40px;
+            overflow-x: auto;
+        }
+
+        .comparison-table h3 {
+            text-align: center;
+            margin-bottom: 25px;
+            color: #333;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .check {
+            color: #27ae60;
+            font-weight: bold;
+        }
+
+        .cross {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+
+        .warning {
+            color: #f39c12;
+            font-weight: bold;
+        }
+
+        .quick-tools {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 40px;
+        }
+
+        .quick-tool {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .quick-tool:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .quick-tool h4 {
+            margin-bottom: 10px;
+            font-size: 1.2rem;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div style="text-align: center; margin-bottom: 20px;">
-            <span style="color: #667eea; font-weight: bold; margin-right: 15px;">🔄 PDF Merger</span>
-            <a href="split.html" style="color: #666; text-decoration: none; font-size: 0.9rem; margin-right: 15px; transition: color 0.3s ease;">✂️ PDF Splitter</a>
-            <a href="insert.html" style="color: #666; text-decoration: none; font-size: 0.9rem; transition: color 0.3s ease;">📝 PDF Inserter</a>
-        </div>
-
-        <h1>📄 PDF Merger</h1>
-        
-        <div style="background: #e8f4fd; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #3498db;">
-            <p style="margin: 0; color: #2980b9; font-size: 0.9rem;">
-                <strong>📋 File Requirements:</strong><br>
-                • PDF files only • Maximum 5 MB per file • Combined size limit: 10 MB<br>
-                • <em>NGINX users: Ensure client_max_body_size is configured</em>
-            </p>
-        </div>
-        
-        <form id="pdfForm" action="merge_professional.php" method="post" enctype="multipart/form-data">
-            <div class="upload-section">
-                <div class="file-input-wrapper">
-                    <label for="pdf1">First PDF File:</label>
-                    <div class="file-input">
-                        <input type="file" name="pdf1" id="pdf1" accept=".pdf" required>
-                        <span>Click to select first PDF file</span>
-                    </div>
-                    <div class="file-info" id="file1-info"></div>
-                </div>
-
-                <div class="file-input-wrapper">
-                    <label for="pdf2">Second PDF File:</label>
-                    <div class="file-input">
-                        <input type="file" name="pdf2" id="pdf2" accept=".pdf" required>
-                        <span>Click to select second PDF file</span>
-                    </div>
-                    <div class="file-info" id="file2-info"></div>
-                </div>
-            </div>
-
-            <button type="submit" class="submit-btn" id="mergeBtn" disabled>
-                Merge PDF Files
-            </button>
-
-            <div class="progress" id="progress">
-                <div class="progress-bar">
-                    <div class="progress-fill"></div>
-                </div>
-                <p>Merging your PDF files...</p>
-            </div>
-
-            <div class="error" id="error"></div>
-        </form>
+    <div class="hero">
+        <h1>🔧 Professional PDF Tools Suite</h1>
+        <p>Complete PDF manipulation toolkit with both server-side and client-side processing options. Choose the approach that best fits your needs.</p>
     </div>
 
-    <script>
-        const pdf1Input = document.getElementById('pdf1');
-        const pdf2Input = document.getElementById('pdf2');
-        const mergeBtn = document.getElementById('mergeBtn');
-        const form = document.getElementById('pdfForm');
-        const progress = document.getElementById('progress');
-        const errorDiv = document.getElementById('error');
+    <div class="tool-selection">
+        <h2 class="section-title">Choose Your Processing Method</h2>
+        
+        <div class="tool-grid">
+            <!-- Server-Side Tools -->
+            <div class="tool-card server">
+                <div class="tool-icon">🖥️</div>
+                <h3>Server-Side Tools</h3>
+                <p>Professional-grade processing using PHP and FPDI libraries. Best for complex PDFs and large files up to 50MB. Requires internet connection.</p>
+                <a href="#server-tools" class="btn-primary">Explore Server Tools</a>
+            </div>
 
-        function updateFileInfo(input, infoId) {
-            const infoDiv = document.getElementById(infoId);
-            if (input.files.length > 0) {
-                const file = input.files[0];
-                const size = (file.size / (1024 * 1024)).toFixed(2);
-                const maxSize = 5; // Maximum file size in MB
-                
-                if (size > maxSize) {
-                    infoDiv.textContent = `⚠️ File too large: ${file.name} (${size} MB). Max size: ${maxSize} MB`;
-                    infoDiv.style.color = '#e74c3c';
-                    input.value = ''; // Clear the input
-                    return false;
-                } else {
-                    infoDiv.textContent = `✅ Selected: ${file.name} (${size} MB)`;
-                    infoDiv.style.color = '#28a745';
-                    return true;
-                }
-            } else {
-                infoDiv.textContent = '';
-                return false;
-            }
-        }
+            <!-- Client-Side Tools -->
+            <div class="tool-card client">
+                <div class="tool-icon">🌐</div>
+                <h3>Client-Side Tools</h3>
+                <p>Process PDFs directly in your browser using PDF-lib. Complete privacy, instant processing, and offline capability. Perfect for quick tasks.</p>
+                <a href="client/index.html" class="btn-success">Launch Client Tools</a>
+            </div>
+        </div>
 
-        function checkFormValid() {
-            mergeBtn.disabled = !(pdf1Input.files.length > 0 && pdf2Input.files.length > 0);
-        }
+        <!-- Comparison Table -->
+        <div class="comparison-table">
+            <h3>📊 Tool Comparison Matrix</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>Server-Side (PHP)</th>
+                        <th>Client-Side (JavaScript)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>File Processing</strong></td>
+                        <td>Server uploads & processing</td>
+                        <td>Browser-only processing</td>
+                    </tr>
+                    <tr>
+                        <td><strong>File Size Limit</strong></td>
+                        <td>Up to 50MB</td>
+                        <td>Browser memory dependent</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Privacy</strong></td>
+                        <td>Files temporarily stored on server</td>
+                        <td>Files never leave your browser</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Processing Speed</strong></td>
+                        <td>Network & server dependent</td>
+                        <td>Instant local processing</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Offline Use</strong></td>
+                        <td><span class="cross">❌ No</span></td>
+                        <td><span class="check">✅ Yes</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Complex PDFs</strong></td>
+                        <td><span class="check">✅ Excellent</span></td>
+                        <td><span class="warning">⚠️ Limited</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Reliability</strong></td>
+                        <td>Server resources & libraries</td>
+                        <td>Browser compatibility</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
 
-        pdf1Input.addEventListener('change', function() {
-            const isValid = updateFileInfo(this, 'file1-info');
-            if (!isValid) {
-                this.parentElement.style.borderColor = '#e74c3c';
-                this.parentElement.style.background = '#fdf2f2';
-            } else {
-                this.parentElement.style.borderColor = '#28a745';
-                this.parentElement.style.background = '#f8fff8';
-            }
-            checkFormValid();
-        });
+        <!-- Server Tools Section -->
+        <div id="server-tools">
+            <h2 class="section-title">🖥️ Server-Side PDF Tools</h2>
+            <div class="quick-tools">
+                <a href="server/index.php" class="quick-tool" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <h4>🖥️ Server-Side Tools</h4>
+                    <p>Professional PHP processing</p>
+                </a>
+                <a href="server/merge/index.html" class="quick-tool">
+                    <h4>📄➕ PDF Merger</h4>
+                    <p>Combine multiple PDFs</p>
+                </a>
+                <a href="server/split/index.html" class="quick-tool">
+                    <h4>✂️ PDF Splitter</h4>
+                    <p>Extract specific pages</p>
+                </a>
+                <a href="server/insert/index.html" class="quick-tool">
+                    <h4>📝 Page Inserter</h4>
+                    <p>Insert pages at position</p>
+                </a>
+                <a href="server/delete/index.html" class="quick-tool">
+                    <h4>🗑️ Page Deleter</h4>
+                    <p>Remove unwanted pages</p>
+                </a>
+            </div>
+        </div>
+    </div>
 
-        pdf2Input.addEventListener('change', function() {
-            const isValid = updateFileInfo(this, 'file2-info');
-            if (!isValid) {
-                this.parentElement.style.borderColor = '#e74c3c';
-                this.parentElement.style.background = '#fdf2f2';
-            } else {
-                this.parentElement.style.borderColor = '#28a745';
-                this.parentElement.style.background = '#f8fff8';
-            }
-            checkFormValid();
-        });
-
-        form.addEventListener('submit', function(e) {
-            errorDiv.style.display = 'none';
-            
-            // Validate file types and sizes
-            const file1 = pdf1Input.files[0];
-            const file2 = pdf2Input.files[0];
-            const maxSize = 5 * 1024 * 1024; // 5MB in bytes
-            
-            if (!file1 || !file2) {
-                e.preventDefault();
-                showError('Please select both PDF files.');
-                return;
-            }
-
-            if (!file1.name.toLowerCase().endsWith('.pdf') || !file2.name.toLowerCase().endsWith('.pdf')) {
-                e.preventDefault();
-                showError('Please select only PDF files.');
-                return;
-            }
-
-            if (file1.size > maxSize || file2.size > maxSize) {
-                e.preventDefault();
-                showError('One or both files are too large. Maximum size allowed is 5 MB per file.');
-                return;
-            }
-
-            const totalSize = file1.size + file2.size;
-            if (totalSize > maxSize * 2) {
-                e.preventDefault();
-                showError('Combined file size is too large. Please select smaller files.');
-                return;
-            }
-
-            // Show progress
-            progress.style.display = 'block';
-            mergeBtn.disabled = true;
-            mergeBtn.textContent = 'Merging...';
-        });
-
-        function showError(message) {
-            errorDiv.textContent = message;
-            errorDiv.style.display = 'block';
-        }
-
-        // File input styling
-        document.querySelectorAll('.file-input').forEach(wrapper => {
-            const input = wrapper.querySelector('input[type="file"]');
-            const span = wrapper.querySelector('span');
-            
-            input.addEventListener('change', function() {
-                if (this.files.length > 0) {
-                    span.textContent = this.files[0].name;
-                    wrapper.style.borderColor = '#28a745';
-                    wrapper.style.background = '#f8fff8';
-                } else {
-                    span.textContent = span.textContent.includes('first') ? 'Click to select first PDF file' : 'Click to select second PDF file';
-                    wrapper.style.borderColor = '#ddd';
-                    wrapper.style.background = '#f9f9f9';
-                }
-            });
-        });
-    </script>
+    <script src="shared/js/common.js"></script>
 </body>
 </html>

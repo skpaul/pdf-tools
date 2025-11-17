@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Splitter - Server-Side Tool</title>
+    <link rel="stylesheet" href="../../shared/css/common.css">
+</head>
+<body>
+    <div class="tool-header">
+        <div class="container">
+            <h1>✂️ PDF Splitter</h1>
+            <p>Extract specific pages or split PDF into multiple files using professional server-side processing</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <form action="process.php" method="post" enctype="multipart/form-data" id="splitForm">
+            <div class="upload-area" onclick="document.getElementById('pdfFile').click()">
+                <div class="upload-icon">📄</div>
+                <h3>Select PDF File to Split</h3>
+                <p>Click to select a PDF file or drag & drop here (up to 50MB)</p>
+                <input type="file" id="pdfFile" name="pdf_file" class="file-input" accept=".pdf" required>
+            </div>
+            <div id="fileInfo" class="file-list"></div>
+
+            <div class="control-panel">
+                <div class="form-group">
+                    <label>Split Mode:</label>
+                    <div class="radio-group">
+                        <div class="radio-option">
+                            <input type="radio" id="splitPages" name="split_mode" value="pages" checked>
+                            <label for="splitPages">Specific Pages</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="splitRange" name="split_mode" value="range">
+                            <label for="splitRange">Page Range</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="splitAll" name="split_mode" value="all">
+                            <label for="splitAll">All Pages (Individual)</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="splitChunks" name="split_mode" value="chunks">
+                            <label for="splitChunks">Equal Chunks</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group" id="pagesGroup">
+                    <label for="pages">Pages to Extract (e.g., 1,3,5-8):</label>
+                    <input type="text" id="pages" name="pages" class="form-control" placeholder="1,3,5-8">
+                    <small style="color: #666;">Examples: "1,3,5" for specific pages, "1-5,8-10" for ranges</small>
+                </div>
+
+                <div class="form-group" id="rangeGroup" style="display: none;">
+                    <label for="start_page">Start Page:</label>
+                    <input type="number" id="start_page" name="start_page" class="form-control" min="1" value="1">
+                    <label for="end_page">End Page:</label>
+                    <input type="number" id="end_page" name="end_page" class="form-control" min="1" value="1">
+                </div>
+
+                <div class="form-group" id="chunksGroup" style="display: none;">
+                    <label for="pages_per_chunk">Pages per chunk:</label>
+                    <input type="number" id="pages_per_chunk" name="pages_per_chunk" class="form-control" min="1" value="1">
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary" id="splitBtn" disabled>
+                ✂️ Split PDF
+            </button>
+
+            <div id="progress" class="progress">
+                <div class="progress-bar"></div>
+            </div>
+
+            <div id="status" class="status"></div>
+        </form>
+
+        <div class="control-panel">
+            <h3>ℹ️ Server-Side Processing Benefits</h3>
+            <ul style="margin-left: 20px; color: #666;">
+                <li>Handles complex PDF structures and large files (up to 50MB)</li>
+                <li>Professional FPDI library ensures high quality extraction</li>
+                <li>Support for flexible page selection and ranges</li>
+                <li>ZIP download option for multiple split files</li>
+                <li>Preserves original PDF formatting and metadata</li>
+            </ul>
+        </div>
+
+        <div style="text-align: center; margin-top: 30px;">
+            <a href="../../index.html" class="btn btn-secondary">← Back to Main</a>
+            <a href="../index.php" class="btn btn-secondary">Server Tools Home</a>
+            <a href="../../client/index.html" class="btn btn-success">Try Client-Side Version</a>
+        </div>
+    </div>
+
+    <script src="../../shared/js/common.js"></script>
+    <script>
+        let fileSelected = false;
+
+        // Initialize drag and drop
+        new DragDropHandler(document.querySelector('#pdfFile').parentElement, (file) => {
+            document.getElementById('pdfFile').files = createFileList([file]);
+            handleFileSelection();
+        });
+
+        // Handle file input change
+        document.getElementById('pdfFile').addEventListener('change', handleFileSelection);
+
+        // Handle split mode changes
+        document.querySelectorAll('input[name="split_mode"]').forEach(radio => {
+            radio.addEventListener('change', handleSplitModeChange);
+        });
+
+        function createFileList(files) {
+            const dt = new DataTransfer();
+            files.forEach(file => dt.items.add(file));
+            return dt.files;
+        }
+
+        function handleFileSelection() {
+            const input = document.getElementById('pdfFile');
+            const infoDiv = document.getElementById('fileInfo');
+            
+            if (input.files.length > 0) {
+                const file = input.files[0];
+                const validation = PDFToolsUtils.validatePDFFile(file, 50);
+                
+                if (validation.valid) {
+                    infoDiv.innerHTML = `
+                        <div class="file-item">
+                            <div class="file-info">
+                                <span class="file-name">📄 ${file.name}</span>
+                                <span class="file-size">(${PDFToolsUtils.formatFileSize(file.size)})</span>
+                            </div>
+                        </div>
+                    `;
+                    infoDiv.style.display = 'block';
+                    fileSelected = true;
+                } else {
+                    PDFToolsUtils.showStatus(document.getElementById('status'), validation.error, 'error');
+                    infoDiv.style.display = 'none';
+                    fileSelected = false;
+                }
+            } else {
+                infoDiv.style.display = 'none';
+                fileSelected = false;
+            }
+            
+            updateSplitButton();
+        }
+
+        function handleSplitModeChange() {
+            const mode = document.querySelector('input[name="split_mode"]:checked').value;
+            
+            // Hide all groups first
+            document.getElementById('pagesGroup').style.display = 'none';
+            document.getElementById('rangeGroup').style.display = 'none';
+            document.getElementById('chunksGroup').style.display = 'none';
+            
+            // Show relevant group
+            if (mode === 'pages') {
+                document.getElementById('pagesGroup').style.display = 'block';
+            } else if (mode === 'range') {
+                document.getElementById('rangeGroup').style.display = 'block';
+            } else if (mode === 'chunks') {
+                document.getElementById('chunksGroup').style.display = 'block';
+            }
+        }
+
+        function updateSplitButton() {
+            const splitBtn = document.getElementById('splitBtn');
+            splitBtn.disabled = !fileSelected;
+        }
+
+        // Handle form submission
+        document.getElementById('splitForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const progressEl = document.getElementById('progress');
+            const statusEl = document.getElementById('status');
+            const splitBtn = document.getElementById('splitBtn');
+            
+            splitBtn.disabled = true;
+            splitBtn.innerHTML = '<span class="loading"></span> Processing...';
+            PDFToolsUtils.showProgress(progressEl, 50);
+            
+            fetch('process.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                PDFToolsUtils.hideProgress(progressEl);
+                
+                if (data.success) {
+                    let resultHtml = `
+                        <h4>✅ PDF Split Successfully!</h4>
+                        <p><strong>Files Created:</strong> ${data.files_created}</p>
+                        <div style="margin-top: 15px;">
+                    `;
+                    
+                    if (data.download_all_url) {
+                        resultHtml += `<a href="${data.download_all_url}" class="btn btn-success">📥 Download All as ZIP</a> `;
+                    }
+                    
+                    resultHtml += `</div><div class="results-section" style="margin-top: 20px;">`;
+                    
+                    data.files.forEach(file => {
+                        resultHtml += `
+                            <div class="result-item">
+                                <div class="result-info">
+                                    <h4>${file.name}</h4>
+                                    <p>${file.pages} pages, ${file.size}</p>
+                                </div>
+                                <div class="result-actions">
+                                    <a href="${file.download_url}" class="btn btn-secondary">Download</a>
+                                    <a href="${file.view_url}" class="btn btn-secondary" target="_blank">View</a>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    resultHtml += `</div>`;
+                    
+                    PDFToolsUtils.showStatus(statusEl, resultHtml, 'success');
+                } else {
+                    PDFToolsUtils.showStatus(statusEl, `❌ Error: ${data.error}`, 'error');
+                }
+            })
+            .catch(error => {
+                PDFToolsUtils.hideProgress(progressEl);
+                PDFToolsUtils.showStatus(statusEl, `❌ Error: ${error.message}`, 'error');
+            })
+            .finally(() => {
+                splitBtn.disabled = false;
+                splitBtn.innerHTML = '✂️ Split PDF';
+            });
+        });
+
+        // Initialize with default mode
+        handleSplitModeChange();
+    </script>
+</body>
+</html>

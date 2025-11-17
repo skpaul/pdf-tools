@@ -16,7 +16,7 @@ $post_max = ini_get('post_max_size');
 error_log("Current upload_max_filesize: $upload_max, post_max_size: $post_max");
 
 // Professional PDF Page Deleter using FPDI library
-require_once 'vendor/autoload.php';
+require_once '../../vendor/autoload.php';
 
 use setasign\Fpdi\Fpdi;
 

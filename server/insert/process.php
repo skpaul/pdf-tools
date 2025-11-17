@@ -1,6 +1,6 @@
 <?php
 // Professional PDF Inserter using FPDI library
-require_once 'vendor/autoload.php';
+require_once '../../vendor/autoload.php';
 
 // Set PHP configuration for large file uploads
 ini_set('upload_max_filesize', '50M');

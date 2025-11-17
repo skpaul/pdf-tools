@@ -5,14 +5,14 @@ if (!isset($_GET['file'])) {
 }
 
 $filename = basename($_GET['file']);
-$directory = 'merged'; // default
+$directory = '../../outputs/merged'; // default
 if (isset($_GET['dir'])) {
     if ($_GET['dir'] === 'split') {
-        $directory = 'split';
+        $directory = '../../outputs/split';
     } elseif ($_GET['dir'] === 'inserted') {
-        $directory = 'inserted';
+        $directory = '../../outputs/inserted';
     } elseif ($_GET['dir'] === 'deleted') {
-        $directory = 'deleted';
+        $directory = '../../outputs/deleted';
     }
 }
 $filepath = $directory . '/' . $filename;

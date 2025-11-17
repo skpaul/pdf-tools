@@ -1,6 +1,6 @@
 <?php
 // Professional PDF Merger using FPDI library
-require_once 'vendor/autoload.php';
+require_once '../../vendor/autoload.php';
 
 // Set PHP configuration for large file uploads
 ini_set('upload_max_filesize', '50M');
@@ -12,11 +12,11 @@ ini_set('memory_limit', '256M');
 use setasign\Fpdi\Fpdi;
 
 // Create necessary directories
-if (!file_exists('uploads')) {
-    mkdir('uploads', 0777, true);
+if (!file_exists('../../uploads')) {
+    mkdir('../../uploads', 0777, true);
 }
-if (!file_exists('merged')) {
-    mkdir('merged', 0777, true);
+if (!file_exists('../../outputs/merged')) {
+    mkdir('../../outputs/merged', 0777, true);
 }
 
 function showError($message) {
@@ -96,9 +96,9 @@ $pdf1Name = 'pdf1_' . $timestamp . '.pdf';
 $pdf2Name = 'pdf2_' . $timestamp . '.pdf';
 $mergedName = 'merged_' . $timestamp . '.pdf';
 
-$pdf1Path = 'uploads/' . $pdf1Name;
-$pdf2Path = 'uploads/' . $pdf2Name;
-$mergedPath = 'merged/' . $mergedName;
+$pdf1Path = '../../uploads/' . $pdf1Name;
+$pdf2Path = '../../uploads/' . $pdf2Name;
+$mergedPath = '../../outputs/merged/' . $mergedName;
 
 // Move uploaded files
 if (!move_uploaded_file($pdf1['tmp_name'], $pdf1Path)) {
@@ -291,7 +291,7 @@ if ($mergeResult['success']) {
                 <a href='$mergedPath' class='btn' download='$mergedName'>
                     📥 Download Merged PDF
                 </a>
-                <a href='view_pdf.php?file=$mergedName' class='btn btn-secondary' target='_blank'>
+                <a href='../../shared/viewer/pdf-viewer.php?file=$mergedName' class='btn btn-secondary' target='_blank'>
                     👁️ View in Browser
                 </a>
                 <a href='index.html' class='btn btn-secondary'>
