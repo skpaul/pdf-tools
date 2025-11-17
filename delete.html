@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional PDF Page Deleter</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            max-width: 700px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.5rem;
+            font-weight: 300;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 40px;
+            font-size: 1.1rem;
+        }
+
+        .navigation {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .nav-link {
+            color: #666;
+            text-decoration: none;
+            margin: 0 15px;
+            font-size: 0.9rem;
+            transition: color 0.3s ease;
+        }
+
+        .nav-link:hover {
+            color: #e67e22;
+        }
+
+        .upload-section {
+            margin-bottom: 30px;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .file-input-wrapper label {
+            display: block;
+            padding: 20px;
+            border: 3px dashed #e67e22;
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #fdf6f0;
+        }
+
+        .file-input-wrapper label:hover {
+            border-color: #d35400;
+            background: #fcf1e8;
+            transform: translateY(-2px);
+        }
+
+        .file-input-wrapper input[type="file"] {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .file-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            color: #e67e22;
+        }
+
+        .delete-options {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            border: 1px solid #e9ecef;
+        }
+
+        .delete-options h3 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+        }
+
+        .option-group {
+            margin-bottom: 20px;
+        }
+
+        .radio-option {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 15px;
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .radio-option:hover {
+            border-color: #e67e22;
+            background: #fdf6f0;
+        }
+
+        .radio-option.selected {
+            border-color: #e67e22;
+            background: #fcf1e8;
+        }
+
+        .radio-option input[type="radio"] {
+            margin-right: 12px;
+            margin-top: 3px;
+        }
+
+        .option-content {
+            flex: 1;
+        }
+
+        .option-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .option-description {
+            color: #666;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 1rem;
+            margin-top: 10px;
+            transition: border-color 0.3s ease;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #e67e22;
+        }
+
+        .input-field:disabled {
+            background: #f8f9fa;
+            color: #999;
+        }
+
+        .file-info {
+            display: none;
+            background: #e8f5e8;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            border-left: 4px solid #27ae60;
+        }
+
+        .submit-section {
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .btn {
+            padding: 15px 40px;
+            background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            margin: 0 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(230, 126, 34, 0.3);
+        }
+
+        .btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+        }
+
+        .btn-secondary:hover {
+            box-shadow: 0 10px 25px rgba(52, 152, 219, 0.3);
+        }
+
+        .examples {
+            background: #fff3cd;
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin-top: 10px;
+            border-left: 3px solid #ffc107;
+        }
+
+        .examples-title {
+            font-weight: 600;
+            color: #856404;
+            margin-bottom: 5px;
+        }
+
+        .examples-text {
+            color: #856404;
+            font-size: 0.85rem;
+        }
+
+        .warning {
+            background: #f8d7da;
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin-top: 10px;
+            border-left: 3px solid #dc3545;
+        }
+
+        .warning-text {
+            color: #721c24;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .page-counter {
+            background: #d1ecf1;
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin-top: 10px;
+            border-left: 3px solid #17a2b8;
+            font-size: 0.9rem;
+            color: #0c5460;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="navigation">
+            <a href="index.html" class="nav-link">🔄 PDF Merger</a>
+            <a href="split.html" class="nav-link">✂️ PDF Splitter</a>
+            <a href="insert.html" class="nav-link">📝 PDF Inserter</a>
+            <span style="color: #e67e22; font-weight: bold;">🗑️ PDF Page Deleter</span>
+        </div>
+
+        <h1>🗑️ PDF Page Deleter</h1>
+        <p class="subtitle">Remove specific pages from your PDF documents with precision</p>
+
+        <form id="deleteForm" action="delete_professional.php" method="post" enctype="multipart/form-data">
+            <input type="hidden" name="MAX_FILE_SIZE" value="52428800">
+            <div class="upload-section">
+                <div class="file-input-wrapper">
+                    <label for="pdfFile">
+                        <div class="file-icon">📄</div>
+                        <div>
+                            <strong>Choose PDF file for page deletion</strong><br>
+                            <span style="color: #666;">Click here or drag and drop your PDF file</span><br>
+                            <small style="color: #999;">Maximum file size: 50MB</small>
+                        </div>
+                    </label>
+                    <input type="file" id="pdfFile" name="pdf_file" accept=".pdf" required>
+                </div>
+                <div id="fileInfo" class="file-info"></div>
+            </div>
+
+            <div class="delete-options">
+                <h3>Deletion Options</h3>
+                
+                <div class="option-group">
+                    <div class="radio-option" data-mode="pages">
+                        <input type="radio" id="pages" name="delete_mode" value="pages" checked>
+                        <div class="option-content">
+                            <div class="option-title">Delete Specific Pages</div>
+                            <div class="option-description">Remove specific pages by page numbers or ranges</div>
+                            <input type="text" id="pagesToDelete" name="pages_to_delete" class="input-field" 
+                                   placeholder="Pages to delete (e.g., 1,3,5-7)">
+                            <div class="examples">
+                                <div class="examples-title">Examples:</div>
+                                <div class="examples-text">
+                                    • "1,3,5" = Delete pages 1, 3, and 5<br>
+                                    • "2-5" = Delete pages 2, 3, 4, and 5<br>
+                                    • "1,3-5,8-10" = Delete multiple ranges and individual pages
+                                </div>
+                            </div>
+                            <div class="warning">
+                                <div class="warning-text">⚠️ Pages will be permanently removed from the PDF</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="radio-option" data-mode="range">
+                        <input type="radio" id="range" name="delete_mode" value="range">
+                        <div class="option-content">
+                            <div class="option-title">Delete Page Range</div>
+                            <div class="option-description">Remove a continuous range of pages</div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 10px;">
+                                <input type="number" id="startPage" name="start_page" class="input-field" 
+                                       placeholder="Start page" min="1" disabled>
+                                <input type="number" id="endPage" name="end_page" class="input-field" 
+                                       placeholder="End page" min="1" disabled>
+                            </div>
+                            <div class="examples">
+                                <div class="examples-title">Example:</div>
+                                <div class="examples-text">
+                                    Start: 3, End: 7 = Delete pages 3, 4, 5, 6, 7
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="radio-option" data-mode="keep">
+                        <input type="radio" id="keep" name="delete_mode" value="keep">
+                        <div class="option-content">
+                            <div class="option-title">Keep Only Specific Pages</div>
+                            <div class="option-description">Delete everything except the specified pages (inverse selection)</div>
+                            <input type="text" id="pagesToKeep" name="pages_to_keep" class="input-field" 
+                                   placeholder="Pages to keep (e.g., 1,3,5-7)" disabled>
+                            <div class="examples">
+                                <div class="examples-title">Example:</div>
+                                <div class="examples-text">
+                                    Keep "1,3,5-7" = Only pages 1, 3, 5, 6, 7 remain, all others deleted
+                                </div>
+                            </div>
+                            <div class="page-counter">
+                                This mode is useful when you want to extract specific pages and remove everything else
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="radio-option" data-mode="first-last">
+                        <input type="radio" id="firstLast" name="delete_mode" value="first-last">
+                        <div class="option-content">
+                            <div class="option-title">Delete First/Last Pages</div>
+                            <div class="option-description">Remove pages from the beginning or end of the document</div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 10px;">
+                                <input type="number" id="deleteFirst" name="delete_first" class="input-field" 
+                                       placeholder="Pages from start" min="0" disabled>
+                                <input type="number" id="deleteLast" name="delete_last" class="input-field" 
+                                       placeholder="Pages from end" min="0" disabled>
+                            </div>
+                            <div class="examples">
+                                <div class="examples-title">Example:</div>
+                                <div class="examples-text">
+                                    First: 2, Last: 1 = Remove first 2 pages and last 1 page
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="submit-section">
+                <button type="submit" id="submitBtn" class="btn" disabled>
+                    🗑️ Delete Pages
+                </button>
+                <a href="index.html" class="btn btn-secondary">
+                    🔄 Back to Tools
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        const form = document.getElementById('deleteForm');
+        const fileInput = document.getElementById('pdfFile');
+        const fileInfo = document.getElementById('fileInfo');
+        const submitBtn = document.getElementById('submitBtn');
+        const radioOptions = document.querySelectorAll('.radio-option');
+        
+        const pagesToDeleteInput = document.getElementById('pagesToDelete');
+        const startPageInput = document.getElementById('startPage');
+        const endPageInput = document.getElementById('endPage');
+        const pagesToKeepInput = document.getElementById('pagesToKeep');
+        const deleteFirstInput = document.getElementById('deleteFirst');
+        const deleteLastInput = document.getElementById('deleteLast');
+
+        // File selection handling
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                if (file.type !== 'application/pdf') {
+                    alert('Please select a PDF file.');
+                    fileInput.value = '';
+                    return;
+                }
+                
+                const fileSize = (file.size / (1024 * 1024)).toFixed(2);
+                const maxSize = 50; // MB
+                
+                if (file.size > maxSize * 1024 * 1024) {
+                    alert(`File size (${fileSize} MB) exceeds the maximum limit of ${maxSize} MB.`);
+                    fileInput.value = '';
+                    return;
+                }
+                
+                fileInfo.style.display = 'block';
+                fileInfo.innerHTML = `
+                    <strong>Selected:</strong> ${file.name}<br>
+                    <strong>Size:</strong> ${fileSize} MB<br>
+                    <strong>Type:</strong> PDF Document
+                `;
+                
+                submitBtn.disabled = false;
+            } else {
+                fileInfo.style.display = 'none';
+                submitBtn.disabled = true;
+            }
+        });
+
+        // Radio option handling
+        radioOptions.forEach(option => {
+            option.addEventListener('click', function() {
+                const radio = this.querySelector('input[type="radio"]');
+                radio.checked = true;
+                
+                // Update visual selection
+                radioOptions.forEach(opt => opt.classList.remove('selected'));
+                this.classList.add('selected');
+                
+                // Enable/disable inputs based on mode
+                const mode = radio.value;
+                
+                pagesToDeleteInput.disabled = mode !== 'pages';
+                startPageInput.disabled = mode !== 'range';
+                endPageInput.disabled = mode !== 'range';
+                pagesToKeepInput.disabled = mode !== 'keep';
+                deleteFirstInput.disabled = mode !== 'first-last';
+                deleteLastInput.disabled = mode !== 'first-last';
+                
+                // Clear disabled inputs
+                if (mode !== 'pages') pagesToDeleteInput.value = '';
+                if (mode !== 'range') {
+                    startPageInput.value = '';
+                    endPageInput.value = '';
+                }
+                if (mode !== 'keep') pagesToKeepInput.value = '';
+                if (mode !== 'first-last') {
+                    deleteFirstInput.value = '';
+                    deleteLastInput.value = '';
+                }
+            });
+        });
+
+        // Form validation
+        form.addEventListener('submit', function(e) {
+            const selectedMode = document.querySelector('input[name="delete_mode"]:checked').value;
+            
+            if (selectedMode === 'pages') {
+                const pages = pagesToDeleteInput.value.trim();
+                if (!pages) {
+                    e.preventDefault();
+                    alert('Please specify which pages to delete (e.g., "1,3,5-7").');
+                    pagesToDeleteInput.focus();
+                    return;
+                }
+                
+                // Basic validation of page format
+                if (!/^[\d\s,-]+$/.test(pages)) {
+                    e.preventDefault();
+                    alert('Invalid page format. Use numbers, commas, and hyphens only (e.g., "1,3,5-7").');
+                    pagesToDeleteInput.focus();
+                    return;
+                }
+            }
+            
+            if (selectedMode === 'range') {
+                const startPage = parseInt(startPageInput.value);
+                const endPage = parseInt(endPageInput.value);
+                
+                if (!startPage || !endPage || startPage < 1 || endPage < 1) {
+                    e.preventDefault();
+                    alert('Please specify valid start and end page numbers.');
+                    startPageInput.focus();
+                    return;
+                }
+                
+                if (startPage > endPage) {
+                    e.preventDefault();
+                    alert('Start page cannot be greater than end page.');
+                    startPageInput.focus();
+                    return;
+                }
+            }
+            
+            if (selectedMode === 'keep') {
+                const pages = pagesToKeepInput.value.trim();
+                if (!pages) {
+                    e.preventDefault();
+                    alert('Please specify which pages to keep (e.g., "1,3,5-7").');
+                    pagesToKeepInput.focus();
+                    return;
+                }
+                
+                // Basic validation of page format
+                if (!/^[\d\s,-]+$/.test(pages)) {
+                    e.preventDefault();
+                    alert('Invalid page format. Use numbers, commas, and hyphens only (e.g., "1,3,5-7").');
+                    pagesToKeepInput.focus();
+                    return;
+                }
+            }
+            
+            if (selectedMode === 'first-last') {
+                const deleteFirst = parseInt(deleteFirstInput.value) || 0;
+                const deleteLast = parseInt(deleteLastInput.value) || 0;
+                
+                if (deleteFirst < 0 || deleteLast < 0) {
+                    e.preventDefault();
+                    alert('Page numbers cannot be negative.');
+                    return;
+                }
+                
+                if (deleteFirst === 0 && deleteLast === 0) {
+                    e.preventDefault();
+                    alert('Please specify at least one page to delete from the beginning or end.');
+                    deleteFirstInput.focus();
+                    return;
+                }
+            }
+            
+            // Show loading state
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '⏳ Deleting Pages...';
+        });
+
+        // Initialize first option as selected
+        document.querySelector('.radio-option[data-mode="pages"]').classList.add('selected');
+
+        // Drag and drop functionality
+        const fileLabel = document.querySelector('.file-input-wrapper label');
+        
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            fileLabel.addEventListener(eventName, preventDefaults, false);
+        });
+        
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        ['dragenter', 'dragover'].forEach(eventName => {
+            fileLabel.addEventListener(eventName, highlight, false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            fileLabel.addEventListener(eventName, unhighlight, false);
+        });
+        
+        function highlight(e) {
+            fileLabel.style.borderColor = '#d35400';
+            fileLabel.style.background = '#fcf1e8';
+        }
+        
+        function unhighlight(e) {
+            fileLabel.style.borderColor = '#e67e22';
+            fileLabel.style.background = '#fdf6f0';
+        }
+        
+        fileLabel.addEventListener('drop', handleDrop, false);
+        
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            
+            if (files.length > 0) {
+                fileInput.files = files;
+                fileInput.dispatchEvent(new Event('change'));
+            }
+        }
+    </script>
+</body>
+</html>

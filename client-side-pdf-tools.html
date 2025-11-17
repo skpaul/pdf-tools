@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Client-Side PDF Tools</title>
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script src="https://unpkg.com/downloadjs@1.4.7/download.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 300;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        .nav-tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .nav-tab {
+            flex: 1;
+            padding: 20px;
+            text-align: center;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            color: #666;
+            transition: all 0.3s ease;
+        }
+
+        .nav-tab.active {
+            background: white;
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .nav-tab:hover:not(.active) {
+            background: #e9ecef;
+            color: #495057;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 40px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .upload-area {
+            border: 2px dashed #667eea;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 30px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .upload-area:hover {
+            border-color: #5a67d8;
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .upload-area.dragover {
+            border-color: #4c51bf;
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .file-list {
+            margin-top: 20px;
+            text-align: left;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .file-item .file-info {
+            flex: 1;
+        }
+
+        .file-item .file-name {
+            font-weight: 500;
+            color: #333;
+        }
+
+        .file-item .file-size {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .remove-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .remove-btn:hover {
+            background: #c0392b;
+        }
+
+        .control-panel {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 12px 25px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        .btn:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn-success {
+            background: #28a745;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .progress {
+            width: 100%;
+            height: 20px;
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: #667eea;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status.info {
+            background: #cce7ff;
+            color: #004085;
+            border: 1px solid #b3d7ff;
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .radio-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .radio-option input[type="radio"] {
+            margin: 0;
+        }
+
+        @media (max-width: 768px) {
+            .nav-tabs {
+                flex-direction: column;
+            }
+            
+            .radio-group {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .container {
+                margin: 10px;
+            }
+            
+            .header {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📄 Client-Side PDF Tools</h1>
+            <p>Professional PDF manipulation entirely in your browser - no server required!</p>
+        </div>
+
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="switchTab('merge')">🔄 Merge</button>
+            <button class="nav-tab" onclick="switchTab('split')">✂️ Split</button>
+            <button class="nav-tab" onclick="switchTab('insert')">📝 Insert</button>
+            <button class="nav-tab" onclick="switchTab('delete')">🗑️ Delete</button>
+        </div>
+
+        <!-- Merge Tab -->
+        <div id="merge" class="tab-content active">
+            <h2>PDF Merger</h2>
+            <p>Combine multiple PDF files into a single document.</p>
+            
+            <div class="upload-area" onclick="document.getElementById('mergeFiles').click()">
+                <div class="upload-icon">📁</div>
+                <h3>Click to select PDF files or drag & drop here</h3>
+                <p>Select multiple PDF files to merge</p>
+                <input type="file" id="mergeFiles" class="file-input" multiple accept=".pdf">
+            </div>
+            
+            <div id="mergeFileList" class="file-list"></div>
+            
+            <button id="mergeBtn" class="btn" onclick="mergePDFs()" disabled>
+                🔄 Merge PDFs
+            </button>
+            
+            <div id="mergeProgress" class="progress">
+                <div class="progress-bar"></div>
+            </div>
+            
+            <div id="mergeStatus" class="status"></div>
+        </div>
+
+        <!-- Split Tab -->
+        <div id="split" class="tab-content">
+            <h2>PDF Splitter</h2>
+            <p>Extract specific pages or split PDF into multiple files.</p>
+            
+            <div class="upload-area" onclick="document.getElementById('splitFile').click()">
+                <div class="upload-icon">📄</div>
+                <h3>Click to select a PDF file or drag & drop here</h3>
+                <p>Select one PDF file to split</p>
+                <input type="file" id="splitFile" class="file-input" accept=".pdf">
+            </div>
+            
+            <div class="control-panel">
+                <div class="form-group">
+                    <label>Split Mode:</label>
+                    <div class="radio-group">
+                        <div class="radio-option">
+                            <input type="radio" id="splitPages" name="splitMode" value="pages" checked>
+                            <label for="splitPages">Specific Pages</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="splitRange" name="splitMode" value="range">
+                            <label for="splitRange">Page Range</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="splitAll" name="splitMode" value="all">
+                            <label for="splitAll">All Pages (Individual)</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="splitPagesInput">Pages to Extract (e.g., 1,3,5-8):</label>
+                    <input type="text" id="splitPagesInput" class="form-control" placeholder="1,3,5-8">
+                </div>
+            </div>
+            
+            <button id="splitBtn" class="btn" onclick="splitPDF()" disabled>
+                ✂️ Split PDF
+            </button>
+            
+            <div id="splitProgress" class="progress">
+                <div class="progress-bar"></div>
+            </div>
+            
+            <div id="splitStatus" class="status"></div>
+        </div>
+
+        <!-- Insert Tab -->
+        <div id="insert" class="tab-content">
+            <h2>PDF Page Inserter</h2>
+            <p>Insert pages from one PDF into another at specific positions.</p>
+            
+            <div class="upload-area" onclick="document.getElementById('targetFile').click()">
+                <div class="upload-icon">📄</div>
+                <h3>Target PDF (where to insert pages)</h3>
+                <p>Select the main PDF file</p>
+                <input type="file" id="targetFile" class="file-input" accept=".pdf">
+            </div>
+            
+            <div class="upload-area" onclick="document.getElementById('sourceFile').click()">
+                <div class="upload-icon">📄</div>
+                <h3>Source PDF (pages to insert)</h3>
+                <p>Select the PDF to take pages from</p>
+                <input type="file" id="sourceFile" class="file-input" accept=".pdf">
+            </div>
+            
+            <div class="control-panel">
+                <div class="form-group">
+                    <label for="insertPosition">Insert Position (page number):</label>
+                    <input type="number" id="insertPosition" class="form-control" min="1" value="1">
+                </div>
+                
+                <div class="form-group">
+                    <label for="insertPages">Pages to Insert (e.g., 1,3,5-8 or leave empty for all):</label>
+                    <input type="text" id="insertPages" class="form-control" placeholder="1,3,5-8 or leave empty for all pages">
+                </div>
+            </div>
+            
+            <button id="insertBtn" class="btn" onclick="insertPages()" disabled>
+                📝 Insert Pages
+            </button>
+            
+            <div id="insertProgress" class="progress">
+                <div class="progress-bar"></div>
+            </div>
+            
+            <div id="insertStatus" class="status"></div>
+        </div>
+
+        <!-- Delete Tab -->
+        <div id="delete" class="tab-content">
+            <h2>PDF Page Deleter</h2>
+            <p>Remove specific pages from your PDF document.</p>
+            
+            <div class="upload-area" onclick="document.getElementById('deleteFile').click()">
+                <div class="upload-icon">📄</div>
+                <h3>Click to select a PDF file or drag & drop here</h3>
+                <p>Select PDF file to remove pages from</p>
+                <input type="file" id="deleteFile" class="file-input" accept=".pdf">
+            </div>
+            
+            <div class="control-panel">
+                <div class="form-group">
+                    <label>Delete Mode:</label>
+                    <div class="radio-group">
+                        <div class="radio-option">
+                            <input type="radio" id="deleteSpecific" name="deleteMode" value="specific" checked>
+                            <label for="deleteSpecific">Delete Specific Pages</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="keepOnly" name="deleteMode" value="keep">
+                            <label for="keepOnly">Keep Only Specified Pages</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="deletePagesInput">Page Numbers (e.g., 1,3,5-8):</label>
+                    <input type="text" id="deletePagesInput" class="form-control" placeholder="1,3,5-8">
+                </div>
+            </div>
+            
+            <button id="deleteBtn" class="btn btn-danger" onclick="deletePages()" disabled>
+                🗑️ Delete Pages
+            </button>
+            
+            <div id="deleteProgress" class="progress">
+                <div class="progress-bar"></div>
+            </div>
+            
+            <div id="deleteStatus" class="status"></div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let mergeFiles = [];
+        let splitFile = null;
+        let targetFile = null;
+        let sourceFile = null;
+        let deleteFile = null;
+
+        // Utility functions
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function showStatus(tabId, message, type = 'info') {
+            const status = document.getElementById(tabId + 'Status');
+            status.className = `status ${type}`;
+            status.innerHTML = message;
+            status.style.display = 'block';
+        }
+
+        function hideStatus(tabId) {
+            const status = document.getElementById(tabId + 'Status');
+            status.style.display = 'none';
+        }
+
+        function showProgress(tabId) {
+            const progress = document.getElementById(tabId + 'Progress');
+            progress.style.display = 'block';
+        }
+
+        function hideProgress(tabId) {
+            const progress = document.getElementById(tabId + 'Progress');
+            progress.style.display = 'none';
+        }
+
+        function updateProgress(tabId, percent) {
+            const progressBar = document.querySelector(`#${tabId}Progress .progress-bar`);
+            progressBar.style.width = percent + '%';
+        }
+
+        function parsePageNumbers(input) {
+            if (!input.trim()) return [];
+            
+            const pages = new Set();
+            const parts = input.split(',');
+            
+            for (let part of parts) {
+                part = part.trim();
+                if (part.includes('-')) {
+                    const [start, end] = part.split('-').map(n => parseInt(n.trim()));
+                    for (let i = start; i <= end; i++) {
+                        pages.add(i);
+                    }
+                } else {
+                    pages.add(parseInt(part));
+                }
+            }
+            
+            return Array.from(pages).sort((a, b) => a - b);
+        }
+
+        // Tab switching
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remove active from all nav tabs
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // File handling
+        function setupFileInput(inputId, callback) {
+            const input = document.getElementById(inputId);
+            input.addEventListener('change', callback);
+            
+            // Setup drag and drop
+            const uploadArea = input.parentElement;
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+            
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('dragover');
+            });
+            
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                input.files = e.dataTransfer.files;
+                callback();
+            });
+        }
+
+        // Merge functionality
+        function handleMergeFiles() {
+            mergeFiles = Array.from(document.getElementById('mergeFiles').files);
+            displayMergeFiles();
+            document.getElementById('mergeBtn').disabled = mergeFiles.length < 2;
+        }
+
+        function displayMergeFiles() {
+            const container = document.getElementById('mergeFileList');
+            container.innerHTML = '';
+            
+            mergeFiles.forEach((file, index) => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                fileItem.innerHTML = `
+                    <div class="file-info">
+                        <div class="file-name">${file.name}</div>
+                        <div class="file-size">${formatFileSize(file.size)}</div>
+                    </div>
+                    <button class="remove-btn" onclick="removeMergeFile(${index})">Remove</button>
+                `;
+                container.appendChild(fileItem);
+            });
+        }
+
+        function removeMergeFile(index) {
+            mergeFiles.splice(index, 1);
+            displayMergeFiles();
+            document.getElementById('mergeBtn').disabled = mergeFiles.length < 2;
+        }
+
+        async function mergePDFs() {
+            if (mergeFiles.length < 2) {
+                showStatus('merge', 'Please select at least 2 PDF files', 'error');
+                return;
+            }
+
+            try {
+                showProgress('merge');
+                hideStatus('merge');
+                updateProgress('merge', 0);
+
+                // Create a new PDF document
+                const mergedPdf = await PDFLib.PDFDocument.create();
+                
+                for (let i = 0; i < mergeFiles.length; i++) {
+                    updateProgress('merge', (i / mergeFiles.length) * 90);
+                    
+                    const fileBuffer = await mergeFiles[i].arrayBuffer();
+                    const pdf = await PDFLib.PDFDocument.load(fileBuffer);
+                    const pages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+                    
+                    pages.forEach((page) => mergedPdf.addPage(page));
+                }
+
+                updateProgress('merge', 95);
+                
+                // Generate the merged PDF
+                const pdfBytes = await mergedPdf.save();
+                
+                updateProgress('merge', 100);
+                
+                // Download the result
+                const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+                const filename = `merged_${new Date().getTime()}.pdf`;
+                download(blob, filename, 'application/pdf');
+                
+                hideProgress('merge');
+                showStatus('merge', `Successfully merged ${mergeFiles.length} PDF files!`, 'success');
+                
+            } catch (error) {
+                hideProgress('merge');
+                showStatus('merge', `Error merging PDFs: ${error.message}`, 'error');
+                console.error('Merge error:', error);
+            }
+        }
+
+        // Split functionality
+        function handleSplitFile() {
+            splitFile = document.getElementById('splitFile').files[0];
+            document.getElementById('splitBtn').disabled = !splitFile;
+        }
+
+        async function splitPDF() {
+            if (!splitFile) {
+                showStatus('split', 'Please select a PDF file', 'error');
+                return;
+            }
+
+            try {
+                showProgress('split');
+                hideStatus('split');
+                updateProgress('split', 0);
+
+                const fileBuffer = await splitFile.arrayBuffer();
+                const pdf = await PDFLib.PDFDocument.load(fileBuffer);
+                const totalPages = pdf.getPageCount();
+                
+                const splitMode = document.querySelector('input[name="splitMode"]:checked').value;
+                const pagesInput = document.getElementById('splitPagesInput').value;
+                
+                let pagesToExtract = [];
+                
+                if (splitMode === 'all') {
+                    pagesToExtract = Array.from({length: totalPages}, (_, i) => i + 1);
+                } else if (splitMode === 'pages' || splitMode === 'range') {
+                    if (!pagesInput.trim()) {
+                        showStatus('split', 'Please specify pages to extract', 'error');
+                        hideProgress('split');
+                        return;
+                    }
+                    pagesToExtract = parsePageNumbers(pagesInput);
+                }
+                
+                // Validate page numbers
+                const invalidPages = pagesToExtract.filter(p => p < 1 || p > totalPages);
+                if (invalidPages.length > 0) {
+                    showStatus('split', `Invalid page numbers: ${invalidPages.join(', ')}. PDF has ${totalPages} pages.`, 'error');
+                    hideProgress('split');
+                    return;
+                }
+                
+                updateProgress('split', 20);
+                
+                if (splitMode === 'all') {
+                    // Split into individual pages
+                    for (let i = 0; i < pagesToExtract.length; i++) {
+                        const pageNum = pagesToExtract[i];
+                        updateProgress('split', 20 + (i / pagesToExtract.length) * 70);
+                        
+                        const newPdf = await PDFLib.PDFDocument.create();
+                        const [page] = await newPdf.copyPages(pdf, [pageNum - 1]);
+                        newPdf.addPage(page);
+                        
+                        const pdfBytes = await newPdf.save();
+                        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+                        const filename = `page_${pageNum}_${new Date().getTime()}.pdf`;
+                        download(blob, filename, 'application/pdf');
+                        
+                        // Small delay to prevent browser blocking
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                    }
+                } else {
+                    // Extract selected pages into one PDF
+                    const newPdf = await PDFLib.PDFDocument.create();
+                    const pageIndices = pagesToExtract.map(p => p - 1);
+                    const pages = await newPdf.copyPages(pdf, pageIndices);
+                    
+                    pages.forEach(page => newPdf.addPage(page));
+                    
+                    updateProgress('split', 90);
+                    
+                    const pdfBytes = await newPdf.save();
+                    const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+                    const filename = `extracted_pages_${new Date().getTime()}.pdf`;
+                    download(blob, filename, 'application/pdf');
+                }
+                
+                updateProgress('split', 100);
+                hideProgress('split');
+                showStatus('split', `Successfully extracted ${pagesToExtract.length} pages!`, 'success');
+                
+            } catch (error) {
+                hideProgress('split');
+                showStatus('split', `Error splitting PDF: ${error.message}`, 'error');
+                console.error('Split error:', error);
+            }
+        }
+
+        // Insert functionality
+        function handleTargetFile() {
+            targetFile = document.getElementById('targetFile').files[0];
+            updateInsertButton();
+        }
+
+        function handleSourceFile() {
+            sourceFile = document.getElementById('sourceFile').files[0];
+            updateInsertButton();
+        }
+
+        function updateInsertButton() {
+            document.getElementById('insertBtn').disabled = !targetFile || !sourceFile;
+        }
+
+        async function insertPages() {
+            if (!targetFile || !sourceFile) {
+                showStatus('insert', 'Please select both target and source PDF files', 'error');
+                return;
+            }
+
+            try {
+                showProgress('insert');
+                hideStatus('insert');
+                updateProgress('insert', 0);
+
+                const targetBuffer = await targetFile.arrayBuffer();
+                const sourceBuffer = await sourceFile.arrayBuffer();
+                
+                const targetPdf = await PDFLib.PDFDocument.load(targetBuffer);
+                const sourcePdf = await PDFLib.PDFDocument.load(sourceBuffer);
+                
+                const insertPosition = parseInt(document.getElementById('insertPosition').value) || 1;
+                const insertPagesInput = document.getElementById('insertPages').value;
+                
+                updateProgress('insert', 20);
+                
+                let pagesToInsert = [];
+                if (insertPagesInput.trim()) {
+                    pagesToInsert = parsePageNumbers(insertPagesInput);
+                } else {
+                    // Insert all pages if no specific pages specified
+                    pagesToInsert = Array.from({length: sourcePdf.getPageCount()}, (_, i) => i + 1);
+                }
+                
+                // Validate page numbers
+                const invalidPages = pagesToInsert.filter(p => p < 1 || p > sourcePdf.getPageCount());
+                if (invalidPages.length > 0) {
+                    showStatus('insert', `Invalid page numbers: ${invalidPages.join(', ')}. Source PDF has ${sourcePdf.getPageCount()} pages.`, 'error');
+                    hideProgress('insert');
+                    return;
+                }
+                
+                updateProgress('insert', 40);
+                
+                // Copy pages from source to target
+                const sourcePageIndices = pagesToInsert.map(p => p - 1);
+                const copiedPages = await targetPdf.copyPages(sourcePdf, sourcePageIndices);
+                
+                updateProgress('insert', 70);
+                
+                // Insert pages at the specified position
+                const insertIndex = Math.max(0, Math.min(insertPosition - 1, targetPdf.getPageCount()));
+                copiedPages.forEach((page, i) => {
+                    targetPdf.insertPage(insertIndex + i, page);
+                });
+                
+                updateProgress('insert', 90);
+                
+                // Generate the result PDF
+                const pdfBytes = await targetPdf.save();
+                const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+                const filename = `inserted_${new Date().getTime()}.pdf`;
+                download(blob, filename, 'application/pdf');
+                
+                updateProgress('insert', 100);
+                hideProgress('insert');
+                showStatus('insert', `Successfully inserted ${pagesToInsert.length} pages at position ${insertPosition}!`, 'success');
+                
+            } catch (error) {
+                hideProgress('insert');
+                showStatus('insert', `Error inserting pages: ${error.message}`, 'error');
+                console.error('Insert error:', error);
+            }
+        }
+
+        // Delete functionality
+        function handleDeleteFile() {
+            deleteFile = document.getElementById('deleteFile').files[0];
+            document.getElementById('deleteBtn').disabled = !deleteFile;
+        }
+
+        async function deletePages() {
+            if (!deleteFile) {
+                showStatus('delete', 'Please select a PDF file', 'error');
+                return;
+            }
+
+            const deletePagesInput = document.getElementById('deletePagesInput').value;
+            if (!deletePagesInput.trim()) {
+                showStatus('delete', 'Please specify pages to delete/keep', 'error');
+                return;
+            }
+
+            try {
+                showProgress('delete');
+                hideStatus('delete');
+                updateProgress('delete', 0);
+
+                const fileBuffer = await deleteFile.arrayBuffer();
+                const pdf = await PDFLib.PDFDocument.load(fileBuffer);
+                const totalPages = pdf.getPageCount();
+                
+                const deleteMode = document.querySelector('input[name="deleteMode"]:checked').value;
+                const specifiedPages = parsePageNumbers(deletePagesInput);
+                
+                // Validate page numbers
+                const invalidPages = specifiedPages.filter(p => p < 1 || p > totalPages);
+                if (invalidPages.length > 0) {
+                    showStatus('delete', `Invalid page numbers: ${invalidPages.join(', ')}. PDF has ${totalPages} pages.`, 'error');
+                    hideProgress('delete');
+                    return;
+                }
+                
+                updateProgress('delete', 30);
+                
+                let pagesToKeep = [];
+                if (deleteMode === 'keep') {
+                    // Keep only specified pages
+                    pagesToKeep = specifiedPages;
+                } else {
+                    // Delete specified pages (keep all others)
+                    const allPages = Array.from({length: totalPages}, (_, i) => i + 1);
+                    pagesToKeep = allPages.filter(p => !specifiedPages.includes(p));
+                }
+                
+                if (pagesToKeep.length === 0) {
+                    showStatus('delete', 'Cannot delete all pages from the PDF', 'error');
+                    hideProgress('delete');
+                    return;
+                }
+                
+                updateProgress('delete', 50);
+                
+                // Create new PDF with only the pages to keep
+                const newPdf = await PDFLib.PDFDocument.create();
+                const pageIndices = pagesToKeep.map(p => p - 1);
+                const pages = await newPdf.copyPages(pdf, pageIndices);
+                
+                updateProgress('delete', 80);
+                
+                pages.forEach(page => newPdf.addPage(page));
+                
+                const pdfBytes = await newPdf.save();
+                const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+                const filename = `deleted_${new Date().getTime()}.pdf`;
+                download(blob, filename, 'application/pdf');
+                
+                updateProgress('delete', 100);
+                hideProgress('delete');
+                
+                const actionText = deleteMode === 'keep' 
+                    ? `Kept ${pagesToKeep.length} pages` 
+                    : `Deleted ${specifiedPages.length} pages, kept ${pagesToKeep.length}`;
+                showStatus('delete', `Success! ${actionText}`, 'success');
+                
+            } catch (error) {
+                hideProgress('delete');
+                showStatus('delete', `Error processing PDF: ${error.message}`, 'error');
+                console.error('Delete error:', error);
+            }
+        }
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            // Setup file inputs
+            setupFileInput('mergeFiles', handleMergeFiles);
+            setupFileInput('splitFile', handleSplitFile);
+            setupFileInput('targetFile', handleTargetFile);
+            setupFileInput('sourceFile', handleSourceFile);
+            setupFileInput('deleteFile', handleDeleteFile);
+            
+            // Setup radio button handlers for split mode
+            document.querySelectorAll('input[name="splitMode"]').forEach(radio => {
+                radio.addEventListener('change', function() {
+                    const pagesInput = document.getElementById('splitPagesInput');
+                    if (this.value === 'all') {
+                        pagesInput.disabled = true;
+                        pagesInput.placeholder = 'All pages will be split individually';
+                    } else {
+                        pagesInput.disabled = false;
+                        pagesInput.placeholder = '1,3,5-8';
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

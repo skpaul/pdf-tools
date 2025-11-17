@@ -1,0 +1,51 @@
+## NGINX Configuration for PDF Tools
+## Add this to your NGINX server block configuration
+
+server {
+    # ... your existing configuration ...
+    
+    # Client upload limits
+    client_max_body_size 50M;
+    
+    # PHP-FPM settings (add to your location ~ \.php$ block)
+    location ~ \.php$ {
+        # ... your existing PHP configuration ...
+        
+        # FastCGI parameters for file uploads
+        fastcgi_param upload_max_filesize 50M;
+        fastcgi_param post_max_size 60M;
+        fastcgi_param max_execution_time 300;
+        fastcgi_param max_input_time 300;
+        fastcgi_param memory_limit 256M;
+        
+        # Increase timeouts
+        fastcgi_read_timeout 300;
+        fastcgi_send_timeout 300;
+    }
+}
+
+## Example full NGINX configuration:
+## 
+## server {
+##     listen 80;
+##     server_name your-domain.com;
+##     root /var/www/pdf-merger-app;
+##     index index.html index.php;
+##     
+##     client_max_body_size 50M;
+##     
+##     location / {
+##         try_files $uri $uri/ =404;
+##     }
+##     
+##     location ~ \.php$ {
+##         include snippets/fastcgi-php.conf;
+##         fastcgi_pass unix:/var/run/php/php8.1-fpm.sock;
+##         fastcgi_read_timeout 300;
+##         fastcgi_send_timeout 300;
+##     }
+## }
+
+## After making changes, restart NGINX:
+## sudo systemctl restart nginx
+## sudo systemctl restart php8.1-fpm

@@ -1,0 +1,20 @@
+{
+    "name": "orion/pdf-tools",
+    "description": "Professional PDF manipulation tools - merge and split PDFs with ease",
+    "keywords": ["pdf", "merge", "split", "fpdi", "web-app"],
+    "require": {
+        "php": ">=8.0",
+        "setasign/fpdf": "^2.0",
+        "setasign/fpdi": "^2.3"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "src/"
+        }
+    },
+    "suggest": {
+        "ext-zip": "For ZIP archive creation (enables batch download of split files)",
+        "ext-gd": "For image processing capabilities",
+        "ext-imagick": "For advanced image and PDF processing"
+    }
+}

@@ -1,0 +1,25 @@
+# Professional PDF Tools - Apache Configuration
+
+# File upload limits for PDF processing
+php_value upload_max_filesize 50M
+php_value post_max_size 100M
+php_value max_execution_time 300
+php_value max_input_time 300
+php_value memory_limit 256M
+
+# Note: For ZIP download functionality, ensure php_zip extension is enabled
+# If ZipArchive is not available, the app will fall back to individual downloads
+
+# Security: Prevent access to sensitive files
+<Files "composer.*">
+    Require all denied
+</Files>
+
+<Files "*.md">
+    Require all denied
+</Files>
+
+# Optional: Force HTTPS (uncomment if using SSL)
+# RewriteEngine On
+# RewriteCond %{HTTPS} off
+# RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
