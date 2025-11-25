@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Inserter - Client-Side PDF Tools</title>
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script src="https://unpkg.com/downloadjs@1.4.7/download.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .breadcrumb {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px 25px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            color: white;
+        }
+
+        .breadcrumb a {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            margin-right: 10px;
+        }
+
+        .breadcrumb a:hover {
+            color: white;
+            text-decoration: underline;
+        }
+
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: #9b59b6;
+            margin-bottom: 15px;
+            font-size: 2.2rem;
+            font-weight: 300;
+            text-align: center;
+        }
+
+        .subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+
+        .tool-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            border-left: 4px solid #9b59b6;
+        }
+
+        .section-title {
+            color: #333;
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .upload-area {
+            border: 2px dashed #9b59b6;
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #faf8ff;
+            margin-bottom: 20px;
+        }
+
+        .upload-area:hover {
+            border-color: #8e44ad;
+            background: #f5f0ff;
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            color: #9b59b6;
+            margin-bottom: 15px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .position-controls {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .position-controls label {
+            display: block;
+            color: #555;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .position-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        .position-input:focus {
+            border-color: #9b59b6;
+            outline: none;
+        }
+
+        .process-btn {
+            background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        .process-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(155, 89, 182, 0.3);
+        }
+
+        .process-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        .status.info {
+            background: #e3f2fd;
+            color: #1976d2;
+            border: 1px solid #bbdefb;
+        }
+
+        .status.success {
+            background: #e8f5e8;
+            color: #2e7d32;
+            border: 1px solid #c8e6c9;
+        }
+
+        .status.error {
+            background: #ffebee;
+            color: #c62828;
+            border: 1px solid #ffcdd2;
+        }
+
+        .progress {
+            width: 100%;
+            height: 6px;
+            background: #f0f0f0;
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #9b59b6, #8e44ad);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .file-info {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border: 1px solid #e0e0e0;
+        }
+
+        .file-info h4 {
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .file-info p {
+            color: #666;
+            margin: 0;
+        }
+
+        .download-section {
+            background: #e8f5e8;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .download-btn {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            color: white;
+            text-decoration: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-weight: 600;
+            display: inline-block;
+            margin-top: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(39, 174, 96, 0.3);
+        }
+
+        .instructions {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .instructions h4 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+
+        .instructions ol {
+            color: #856404;
+            margin-left: 20px;
+        }
+
+        .instructions li {
+            margin-bottom: 5px;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 25px;
+                margin: 10px;
+            }
+            
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            .breadcrumb {
+                padding: 10px 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="breadcrumb">
+        <a href="../index.html">🏠 Home</a> →
+        <a href="index.html">🌐 Client Tools</a> →
+        <span>📝 PDF Inserter</span>
+    </div>
+
+    <div class="container">
+        <h1>📝 PDF Page Inserter</h1>
+        <p class="subtitle">
+            Insert pages from one PDF document into another at any position<br>
+            Client-side processing - your files stay private and secure
+        </p>
+
+        <div class="instructions">
+            <h4>📋 How to use:</h4>
+            <ol>
+                <li>Select the main PDF file (where pages will be inserted)</li>
+                <li>Choose the source PDF file (pages to insert from)</li>
+                <li>Specify the position and pages to insert</li>
+                <li>Click "Insert Pages" to process</li>
+                <li>Download your new PDF with inserted pages</li>
+            </ol>
+        </div>
+
+        <div class="tool-section">
+            <div class="section-title">📄 Select PDF Files</div>
+            
+            <div class="upload-area" onclick="document.getElementById('targetFile').click()">
+                <div class="upload-icon">📄</div>
+                <h3>Target PDF (main document)</h3>
+                <p>Select the PDF where pages will be inserted</p>
+                <input type="file" id="targetFile" class="file-input" accept=".pdf" />
+            </div>
+            <div id="targetInfo"></div>
+            
+            <div class="upload-area" onclick="document.getElementById('sourceFile').click()">
+                <div class="upload-icon">📄</div>
+                <h3>Source PDF (pages to insert)</h3>
+                <p>Select the PDF to take pages from</p>
+                <input type="file" id="sourceFile" class="file-input" accept=".pdf" />
+            </div>
+            <div id="sourceInfo"></div>
+        </div>
+
+        <div class="tool-section" id="insertControls" style="display: none;">
+            <div class="section-title">⚙️ Insert Options</div>
+            
+            <div class="position-controls">
+                <label for="insertPosition">Insert Position (page number):</label>
+                <input type="number" id="insertPosition" class="position-input" min="1" value="1" />
+                <small style="color: #666; display: block; margin-top: 5px;">
+                    Enter the page number where you want to insert. For example, enter "3" to insert after page 2.
+                </small>
+            </div>
+
+            <div class="position-controls">
+                <label for="pagesInput">Pages to Insert (optional - leave empty for all):</label>
+                <input type="text" id="pagesInput" class="position-input" placeholder="e.g., 1,3,5-8 or leave empty for all" />
+                <small style="color: #666; display: block; margin-top: 5px;">
+                    Specify which pages from the source PDF to insert, or leave empty to insert all pages.
+                </small>
+            </div>
+        </div>
+
+        <button id="insertBtn" class="process-btn" disabled>
+            📝 Insert Pages
+        </button>
+
+        <div class="progress" id="progressContainer" style="display: none;">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+
+        <div id="status"></div>
+
+        <div class="download-section" id="downloadSection">
+            <h3>✅ Pages Inserted Successfully!</h3>
+            <p>Your PDF with inserted pages is ready for download.</p>
+            <a id="downloadBtn" class="download-btn" href="#" download="pdf_with_inserted_pages.pdf">
+                💾 Download PDF
+            </a>
+        </div>
+
+        <div style="text-align: center; margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 10px;">
+            <h3>🔧 Other Tools</h3>
+            <a href="merge.html" style="display: inline-block; padding: 10px 20px; background: #667eea; color: white; text-decoration: none; border-radius: 6px; margin: 5px;">
+                🔄 Merge PDFs
+            </a>
+            <a href="split.html" style="display: inline-block; padding: 10px 20px; background: #f39c12; color: white; text-decoration: none; border-radius: 6px; margin: 5px;">
+                ✂️ Split PDF
+            </a>
+            <a href="delete.html" style="display: inline-block; padding: 10px 20px; background: #e74c3c; color: white; text-decoration: none; border-radius: 6px; margin: 5px;">
+                🗑️ Delete Pages
+            </a>
+        </div>
+    </div>
+
+    <script>
+        const { PDFDocument } = PDFLib;
+
+        let targetPdf = null;
+        let sourcePdf = null;
+        let targetName = '';
+        let sourceName = '';
+        let targetPages = 0;
+        let sourcePages = 0;
+
+        const targetInput = document.getElementById('targetFile');
+        const sourceInput = document.getElementById('sourceFile');
+        const insertPositionInput = document.getElementById('insertPosition');
+        const pagesInput = document.getElementById('pagesInput');
+        const insertBtn = document.getElementById('insertBtn');
+        const statusDiv = document.getElementById('status');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressBar = document.getElementById('progressBar');
+        const downloadSection = document.getElementById('downloadSection');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const insertControls = document.getElementById('insertControls');
+
+        // Event listeners
+        targetInput.addEventListener('change', handleTargetFile);
+        sourceInput.addEventListener('change', handleSourceFile);
+        insertPositionInput.addEventListener('input', validateInputs);
+        pagesInput.addEventListener('input', validateInputs);
+        insertBtn.addEventListener('click', insertPages);
+
+        async function handleTargetFile() {
+            const file = targetInput.files[0];
+            if (file && file.type === 'application/pdf') {
+                try {
+                    showStatus('Loading target PDF...', 'info');
+                    const arrayBuffer = await file.arrayBuffer();
+                    targetPdf = await PDFDocument.load(arrayBuffer);
+                    targetName = file.name.replace('.pdf', '');
+                    targetPages = targetPdf.getPageCount();
+                    
+                    document.getElementById('targetInfo').innerHTML = `
+                        <div class="file-info">
+                            <h4>${file.name}</h4>
+                            <p>Pages: ${targetPages} | Size: ${formatFileSize(file.size)}</p>
+                        </div>
+                    `;
+                    
+                    insertPositionInput.max = targetPages + 1;
+                    showStatus('Target PDF loaded successfully', 'success');
+                    checkFiles();
+                } catch (error) {
+                    showStatus('Error loading target PDF: ' + error.message, 'error');
+                    targetPdf = null;
+                    document.getElementById('targetInfo').innerHTML = '';
+                }
+            }
+        }
+
+        async function handleSourceFile() {
+            const file = sourceInput.files[0];
+            if (file && file.type === 'application/pdf') {
+                try {
+                    showStatus('Loading source PDF...', 'info');
+                    const arrayBuffer = await file.arrayBuffer();
+                    sourcePdf = await PDFDocument.load(arrayBuffer);
+                    sourceName = file.name.replace('.pdf', '');
+                    sourcePages = sourcePdf.getPageCount();
+                    
+                    document.getElementById('sourceInfo').innerHTML = `
+                        <div class="file-info">
+                            <h4>${file.name}</h4>
+                            <p>Pages: ${sourcePages} | Size: ${formatFileSize(file.size)}</p>
+                        </div>
+                    `;
+                    
+                    showStatus('Source PDF loaded successfully', 'success');
+                    checkFiles();
+                } catch (error) {
+                    showStatus('Error loading source PDF: ' + error.message, 'error');
+                    sourcePdf = null;
+                    document.getElementById('sourceInfo').innerHTML = '';
+                }
+            }
+        }
+
+        function checkFiles() {
+            const bothFilesLoaded = targetPdf && sourcePdf;
+            insertControls.style.display = bothFilesLoaded ? 'block' : 'none';
+            validateInputs();
+        }
+
+        function validateInputs() {
+            if (!targetPdf || !sourcePdf) {
+                insertBtn.disabled = true;
+                return;
+            }
+            
+            const position = parseInt(insertPositionInput.value);
+            const validPosition = position >= 1 && position <= (targetPages + 1);
+            
+            // Validate pages input if provided
+            const pagesText = pagesInput.value.trim();
+            let validPages = true;
+            if (pagesText) {
+                try {
+                    const pages = parsePageNumbers(pagesText);
+                    validPages = pages.every(p => p >= 1 && p <= sourcePages);
+                } catch {
+                    validPages = false;
+                }
+            }
+            
+            insertBtn.disabled = !validPosition || !validPages;
+        }
+
+        function parsePageNumbers(input) {
+            const pages = new Set();
+            const parts = input.split(',').map(p => p.trim()).filter(p => p);
+            
+            for (const part of parts) {
+                if (part.includes('-')) {
+                    const [start, end] = part.split('-').map(n => parseInt(n.trim()));
+                    if (isNaN(start) || isNaN(end) || start > end) {
+                        throw new Error('Invalid range');
+                    }
+                    for (let i = start; i <= end; i++) {
+                        pages.add(i);
+                    }
+                } else {
+                    const num = parseInt(part);
+                    if (isNaN(num)) {
+                        throw new Error('Invalid number');
+                    }
+                    pages.add(num);
+                }
+            }
+            
+            return Array.from(pages).sort((a, b) => a - b);
+        }
+
+        async function insertPages() {
+            if (!targetPdf || !sourcePdf) return;
+            
+            try {
+                insertBtn.disabled = true;
+                showStatus('Inserting pages...', 'info');
+                progressContainer.style.display = 'block';
+                downloadSection.style.display = 'none';
+                updateProgress(0);
+                
+                const position = parseInt(insertPositionInput.value) - 1; // Convert to 0-based
+                const pagesText = pagesInput.value.trim();
+                
+                let pagesToInsert = [];
+                if (pagesText) {
+                    pagesToInsert = parsePageNumbers(pagesText).map(p => p - 1); // Convert to 0-based
+                } else {
+                    pagesToInsert = Array.from({length: sourcePages}, (_, i) => i);
+                }
+                
+                updateProgress(20);
+                
+                // Create new PDF
+                const newPdf = await PDFDocument.create();
+                
+                // Copy pages before insertion point
+                if (position > 0) {
+                    const beforePages = await newPdf.copyPages(targetPdf, Array.from({length: position}, (_, i) => i));
+                    beforePages.forEach(page => newPdf.addPage(page));
+                }
+                
+                updateProgress(40);
+                
+                // Insert pages from source
+                const insertedPages = await newPdf.copyPages(sourcePdf, pagesToInsert);
+                insertedPages.forEach(page => newPdf.addPage(page));
+                
+                updateProgress(70);
+                
+                // Copy remaining pages from target
+                if (position < targetPages) {
+                    const afterPages = await newPdf.copyPages(targetPdf, Array.from({length: targetPages - position}, (_, i) => i + position));
+                    afterPages.forEach(page => newPdf.addPage(page));
+                }
+                
+                updateProgress(90);
+                
+                // Save PDF
+                const pdfBytes = await newPdf.save();
+                const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+                const url = URL.createObjectURL(blob);
+                
+                const filename = `${targetName}_with_${sourceName}_inserted.pdf`;
+                downloadBtn.href = url;
+                downloadBtn.download = filename;
+                
+                updateProgress(100);
+                progressContainer.style.display = 'none';
+                downloadSection.style.display = 'block';
+                showStatus(`Successfully inserted ${pagesToInsert.length} pages at position ${insertPositionInput.value}`, 'success');
+                
+            } catch (error) {
+                console.error('Insert error:', error);
+                showStatus('Error inserting pages: ' + error.message, 'error');
+                progressContainer.style.display = 'none';
+            } finally {
+                insertBtn.disabled = false;
+            }
+        }
+
+        function updateProgress(percent) {
+            progressBar.style.width = percent + '%';
+        }
+
+        function showStatus(message, type) {
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Clear status on file change
+        targetInput.addEventListener('change', () => {
+            statusDiv.innerHTML = '';
+            downloadSection.style.display = 'none';
+            progressContainer.style.display = 'none';
+        });
+
+        sourceInput.addEventListener('change', () => {
+            statusDiv.innerHTML = '';
+            downloadSection.style.display = 'none';
+            progressContainer.style.display = 'none';
+        });
+    </script>
+</body>
+</html>
